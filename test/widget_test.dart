@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:drift_pos/app.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
   testWidgets('POSApp launches blank window', (WidgetTester tester) async {
     await tester.pumpWidget(
       const ProviderScope(
