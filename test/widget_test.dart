@@ -32,7 +32,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('Products'));
+    await tester.tap(find.text('Menu'));
     await tester.pumpAndSettle();
 
     expect(find.text('Products'), findsWidgets);

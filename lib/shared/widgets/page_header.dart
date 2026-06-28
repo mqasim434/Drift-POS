@@ -28,11 +28,27 @@ class PageHeader extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: Text(title, style: AppTextStyles.headline),
+            child: Text(
+              title,
+              style: AppTextStyles.headline,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
           if (actions.isNotEmpty) ...[
             const SizedBox(width: AppSizes.md),
-            ...actions,
+            Flexible(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (var i = 0; i < actions.length; i++) ...[
+                      if (i > 0) const SizedBox(width: AppSizes.sm),
+                      actions[i],
+                    ],
+                  ],
+                ),
+              ),
+            ),
           ],
         ],
       ),

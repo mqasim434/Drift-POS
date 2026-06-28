@@ -45,6 +45,9 @@ dependencies:
   # Preferences
   shared_preferences: ^2.3.3
 
+  # File picking
+  file_picker: ^8.1.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,11 +1,14 @@
 import 'package:drift/drift.dart';
 
 import '../app_database.dart';
+import '../tables/categories.dart';
 import '../tables/products.dart';
+import '../../models/product_filter.dart';
+import '../../models/product_with_category.dart';
 
 part 'products_dao.g.dart';
 
-@DriftAccessor(tables: [Products])
+@DriftAccessor(tables: [Products, Categories])
 class ProductsDao extends DatabaseAccessor<AppDatabase>
     with _$ProductsDaoMixin {
   ProductsDao(super.db);
@@ -29,6 +32,48 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
         .watch();
   }
 
+  Stream<List<ProductWithCategory>> watchFilteredProducts(
+    ProductFilter filter, {
+    required int limit,
+  }) {
+    final query = select(products).join([
+      innerJoin(categories, categories.id.equalsExp(products.categoryId)),
+    ]);
+
+    Expression<bool>? predicate;
+    if (filter.searchQuery.isNotEmpty) {
+      predicate = products.name.like('%${filter.searchQuery}%');
+    }
+    if (filter.categoryId != null) {
+      final categoryPredicate =
+          products.categoryId.equals(filter.categoryId!);
+      predicate =
+          predicate == null ? categoryPredicate : predicate & categoryPredicate;
+    }
+    if (predicate != null) {
+      query.where(predicate);
+    }
+
+    query
+      ..orderBy([
+        OrderingTerm.asc(products.sortOrder),
+        OrderingTerm.asc(products.name),
+      ])
+      ..limit(limit);
+
+    return query.watch().map(
+          (rows) => rows
+              .map(
+                (row) => ProductWithCategory(
+                  product: row.readTable(products),
+                  categoryName: row.readTable(categories).name,
+                  categoryColor: row.readTable(categories).color,
+                ),
+              )
+              .toList(),
+        );
+  }
+
   Future<List<Product>> searchProducts(String query) {
     final pattern = '%$query%';
     return (select(products)
@@ -47,14 +92,19 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
   }
 
   Future<bool> updateProduct(Product product) {
-    return update(products).replace(product);
+    return update(products).replace(
+      product.copyWith(updatedAt: DateTime.now()),
+    );
   }
 
   Future<int> toggleAvailability(int id) async {
     final product = await getProductById(id);
     if (product == null) return 0;
     return (update(products)..where((p) => p.id.equals(id))).write(
-      ProductsCompanion(isAvailable: Value(!product.isAvailable)),
+      ProductsCompanion(
+        isAvailable: Value(!product.isAvailable),
+        updatedAt: Value(DateTime.now()),
+      ),
     );
   }
 
