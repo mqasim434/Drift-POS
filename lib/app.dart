@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 
+import 'core/constants/app_strings.dart';
+import 'core/router/app_router.dart';
+import 'core/theme/app_theme.dart';
+
 class POSApp extends StatelessWidget {
   const POSApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Drift POS',
+    return MaterialApp.router(
+      title: AppStrings.appName,
       debugShowCheckedModeBanner: false,
-      home: const Scaffold(
-        body: SizedBox.expand(),
-      ),
+      theme: AppTheme.dark,
+      routerConfig: appRouter,
     );
   }
 }
