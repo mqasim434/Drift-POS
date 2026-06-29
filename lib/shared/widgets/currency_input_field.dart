@@ -9,6 +9,7 @@ class CurrencyInputField extends FormField<int> {
     super.key,
     int initialPaisa = 0,
     this.labelText = 'Price',
+    this.onPaisaChanged,
   }) : super(
           initialValue: initialPaisa,
           validator: (value) {
@@ -21,21 +22,25 @@ class CurrencyInputField extends FormField<int> {
             return _CurrencyInputBody(
               field: field,
               labelText: labelText,
+              onPaisaChanged: onPaisaChanged,
             );
           },
         );
 
   final String labelText;
+  final ValueChanged<int>? onPaisaChanged;
 }
 
 class _CurrencyInputBody extends StatefulWidget {
   const _CurrencyInputBody({
     required this.field,
     required this.labelText,
+    this.onPaisaChanged,
   });
 
   final FormFieldState<int> field;
   final String labelText;
+  final ValueChanged<int>? onPaisaChanged;
 
   @override
   State<_CurrencyInputBody> createState() => _CurrencyInputBodyState();
@@ -82,7 +87,14 @@ class _CurrencyInputBodyState extends State<_CurrencyInputBody> {
   }
 
   void _handleChanged(String value) {
-    widget.field.didChange(_parsePaisa(value));
+    final paisa = _parsePaisa(value) ?? 0;
+    widget.field.didChange(paisa);
+    final callback = widget.onPaisaChanged;
+    if (callback != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        callback(paisa);
+      });
+    }
   }
 
   @override

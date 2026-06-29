@@ -60,6 +60,9 @@ enum NavItem {
   static NavItem? fromRoute(String route) {
     for (final item in NavItem.values) {
       if (item.route == route) return item;
+      if (item.route != '/' && route.startsWith('${item.route}/')) {
+        return item;
+      }
     }
     return null;
   }

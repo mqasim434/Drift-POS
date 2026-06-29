@@ -2,6 +2,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/navigation/nav_item.dart';
 import '../../features/categories/categories_screen.dart';
+import '../../features/deals/deal_form_screen.dart';
+import '../../features/deals/deals_screen.dart';
 import '../../features/products/products_screen.dart';
 import '../../shared/layouts/main_layout.dart';
 import '../../shared/widgets/feature_placeholder_screen.dart';
@@ -17,19 +19,60 @@ final appRouter = GoRouter(
         );
       },
       routes: [
-        for (final item in NavItem.values)
-          GoRoute(
-            path: item.route,
-            builder: (context, state) {
-              if (item == NavItem.categories) {
-                return const CategoriesScreen();
-              }
-              if (item == NavItem.products) {
-                return const ProductsScreen();
-              }
-              return FeaturePlaceholderScreen(navItem: item);
-            },
-          ),
+        GoRoute(
+          path: NavItem.dashboard.route,
+          builder: (context, state) =>
+              const FeaturePlaceholderScreen(navItem: NavItem.dashboard),
+        ),
+        GoRoute(
+          path: NavItem.menu.route,
+          builder: (context, state) =>
+              const FeaturePlaceholderScreen(navItem: NavItem.menu),
+        ),
+        GoRoute(
+          path: NavItem.orders.route,
+          builder: (context, state) =>
+              const FeaturePlaceholderScreen(navItem: NavItem.orders),
+        ),
+        GoRoute(
+          path: NavItem.products.route,
+          builder: (context, state) => const ProductsScreen(),
+        ),
+        GoRoute(
+          path: NavItem.categories.route,
+          builder: (context, state) => const CategoriesScreen(),
+        ),
+        GoRoute(
+          path: NavItem.deals.route,
+          builder: (context, state) => const DealsScreen(),
+          routes: [
+            GoRoute(
+              path: 'create',
+              builder: (context, state) => const DealFormScreen(),
+            ),
+            GoRoute(
+              path: 'edit/:id',
+              builder: (context, state) => DealFormScreen(
+                dealId: int.parse(state.pathParameters['id']!),
+              ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: NavItem.tables.route,
+          builder: (context, state) =>
+              const FeaturePlaceholderScreen(navItem: NavItem.tables),
+        ),
+        GoRoute(
+          path: NavItem.analytics.route,
+          builder: (context, state) =>
+              const FeaturePlaceholderScreen(navItem: NavItem.analytics),
+        ),
+        GoRoute(
+          path: NavItem.settings.route,
+          builder: (context, state) =>
+              const FeaturePlaceholderScreen(navItem: NavItem.settings),
+        ),
       ],
     ),
   ],
