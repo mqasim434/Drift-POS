@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../../core/navigation/nav_item.dart';
+import '../../features/dashboard/dashboard_screen.dart';
 import '../../features/categories/categories_screen.dart';
 import '../../features/deals/deal_form_screen.dart';
 import '../../features/deals/deals_screen.dart';
@@ -24,8 +25,7 @@ final appRouter = GoRouter(
       routes: [
         GoRoute(
           path: NavItem.dashboard.route,
-          builder: (context, state) =>
-              const FeaturePlaceholderScreen(navItem: NavItem.dashboard),
+          builder: (context, state) => const DashboardScreen(),
         ),
         GoRoute(
           path: NavItem.menu.route,
