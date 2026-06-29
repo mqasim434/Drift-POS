@@ -39,7 +39,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.byType(POSApp), findsOneWidget);
-    expect(find.text('QuickPOS'), findsOneWidget);
+    expect(find.text('DriftPOS'), findsOneWidget);
 
     for (final item in NavItem.mainItems) {
       expect(find.text(item.label), findsWidgets);

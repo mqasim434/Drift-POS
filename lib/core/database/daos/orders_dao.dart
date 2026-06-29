@@ -61,6 +61,12 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
     );
   }
 
+  Future<int> completeOrder(int id) {
+    return (update(orders)..where((o) => o.id.equals(id))).write(
+      const OrdersCompanion(status: Value('completed')),
+    );
+  }
+
   Future<List<Order>> getOrdersInRange(DateTime from, DateTime to) {
     return (select(orders)
           ..where(
@@ -95,7 +101,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
                 o.tableId.equals(tableId) &
                 o.createdAt.isBiggerOrEqualValue(from) &
                 o.createdAt.isSmallerThanValue(to) &
-                o.status.equals('cancelled').not(),
+                o.status.equals('open'),
           ))
         .get();
   }
@@ -111,7 +117,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
                 o.tableId.isNotNull() &
                 o.createdAt.isBiggerOrEqualValue(from) &
                 o.createdAt.isSmallerThanValue(to) &
-                o.status.equals('cancelled').not(),
+                o.status.equals('open'),
           ))
         .get();
 

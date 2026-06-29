@@ -8,9 +8,9 @@ final databaseProvider = Provider<AppDatabase>((ref) {
   ref.onDispose(db.close);
 
   db.customSelect('SELECT 1').get().then((_) {
-    debugPrint('Drift POS: Database opened successfully');
+    debugPrint('DriftPOS: Database opened successfully');
   }).catchError((Object error) {
-    debugPrint('Drift POS: Database failed to open — $error');
+    debugPrint('DriftPOS: Database failed to open — $error');
   });
 
   return db;

@@ -6,6 +6,7 @@ import '../../../core/models/deal_with_items.dart';
 import '../../../core/models/menu_catalog.dart';
 import '../../../core/models/order_type.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/models/order_status.dart';
 import '../../../core/models/placed_order_result.dart';
 import '../../../core/models/cart_totals.dart';
 import '../../../core/providers/shop_settings_provider.dart';
@@ -198,6 +199,7 @@ class CartNotifier extends Notifier<CartState> {
             subtotalInPaisa: totals.subtotalInPaisa,
             taxInPaisa: Value(totals.taxInPaisa),
             totalInPaisa: totals.totalInPaisa,
+            status: const Value(OrderStatus.open),
             notes: state.notes.trim().isEmpty
                 ? const Value.absent()
                 : Value(state.notes.trim()),

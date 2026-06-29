@@ -4,56 +4,76 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_text_styles.dart';
+import '../../../core/database/app_database.dart';
 import '../../../core/models/order_models.dart';
 import '../../../core/models/order_type.dart';
+import '../../../core/models/order_status.dart';
+import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/shop_settings_provider.dart';
+import '../../../core/services/receipt_service.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
-import '../../../core/providers/shop_settings_provider.dart';
-import '../../../core/services/receipt_service.dart';
 import '../providers/orders_provider.dart';
 import 'order_type_badge.dart';
 
-class OrderDetailPanel extends ConsumerWidget {
-  const OrderDetailPanel({
-    super.key,
-    required this.onClose,
-  });
+final orderDetailByIdProvider =
+    FutureProvider.autoDispose.family<OrderWithItems?, int>((ref, orderId) async {
+  final db = ref.watch(databaseProvider);
+  return loadOrderWithItems(db, orderId);
+});
 
-  final VoidCallback onClose;
+Future<void> showOrderDetailDialog(
+  BuildContext context,
+  WidgetRef ref,
+  int orderId,
+) {
+  return showDialog<void>(
+    context: context,
+    builder: (dialogContext) => _OrderDetailDialog(orderId: orderId),
+  );
+}
+
+class _OrderDetailDialog extends ConsumerWidget {
+  const _OrderDetailDialog({required this.orderId});
+
+  final int orderId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final detailAsync = ref.watch(selectedOrderProvider);
+    final detailAsync = ref.watch(orderDetailByIdProvider(orderId));
 
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(left: BorderSide(color: AppColors.border)),
-      ),
-      child: detailAsync.when(
-        data: (detail) {
-          if (detail == null) {
-            return Center(
-              child: Text(
-                'Select an order to view details',
-                style: AppTextStyles.bodySmall,
-              ),
+    return Dialog(
+      insetPadding: const EdgeInsets.all(AppSizes.lg),
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 520, maxHeight: 680),
+        child: detailAsync.when(
+          data: (detail) {
+            if (detail == null) {
+              return Padding(
+                padding: const EdgeInsets.all(AppSizes.lg),
+                child: Text('Order not found', style: AppTextStyles.body),
+              );
+            }
+
+            return OrderDetailContent(
+              detail: detail,
+              onClose: () => Navigator.of(context).pop(),
+              onComplete: () => _completeOrder(context, ref, detail),
+              onCancel: () => _cancelOrder(context, ref, detail),
+              onPrint: () => _printReceipt(context, ref, detail),
             );
-          }
-
-          return _OrderDetailBody(
-            detail: detail,
-            onClose: onClose,
-            onCancel: () => _cancelOrder(context, ref, detail),
-            onPrint: () => _printReceipt(context, ref, detail),
-          );
-        },
-        loading: () => const Center(child: Text('Loading order...')),
-        error: (error, _) => Center(
-          child: Text(
-            error.toString(),
-            style: const TextStyle(color: AppColors.danger),
+          },
+          loading: () => const Padding(
+            padding: EdgeInsets.all(AppSizes.xxl),
+            child: Center(child: CircularProgressIndicator()),
+          ),
+          error: (error, _) => Padding(
+            padding: const EdgeInsets.all(AppSizes.lg),
+            child: Text(
+              error.toString(),
+              style: const TextStyle(color: AppColors.danger),
+            ),
           ),
         ),
       ),
@@ -70,49 +90,55 @@ class OrderDetailPanel extends ConsumerWidget {
     await ref.read(receiptServiceProvider).showPreview(context, detail, settings);
   }
 
+  Future<void> _completeOrder(
+    BuildContext context,
+    WidgetRef ref,
+    OrderWithItems detail,
+  ) async {
+    final completed = await confirmAndCompleteOrder(context, ref, detail.order);
+    if (!completed || !context.mounted) return;
+
+    ref.invalidate(orderDetailByIdProvider(orderId));
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Order completed')),
+    );
+  }
+
   Future<void> _cancelOrder(
     BuildContext context,
     WidgetRef ref,
     OrderWithItems detail,
   ) async {
-    final confirmed = await showConfirmationDialog(
-      context: context,
-      title: 'Cancel Order',
-      message: 'Cancel order ${detail.order.orderNumber}?',
-      confirmLabel: 'Cancel Order',
-    );
-    if (confirmed != true) return;
+    final cancelled = await confirmAndCancelOrder(context, ref, detail.order);
+    if (!cancelled || !context.mounted) return;
 
-    await ref.read(ordersNotifierProvider.notifier).cancelOrder(detail.order.id);
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Order cancelled')),
-      );
-    }
+    ref.invalidate(orderDetailByIdProvider(orderId));
+    Navigator.of(context).pop();
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Order cancelled')),
+    );
   }
 }
 
-class _OrderDetailBody extends StatelessWidget {
-  const _OrderDetailBody({
+class OrderDetailContent extends StatelessWidget {
+  const OrderDetailContent({
+    super.key,
     required this.detail,
     required this.onClose,
+    required this.onComplete,
     required this.onCancel,
     required this.onPrint,
   });
 
   final OrderWithItems detail;
   final VoidCallback onClose;
+  final VoidCallback onComplete;
   final VoidCallback onCancel;
   final VoidCallback onPrint;
 
-  bool get _canCancel {
-    if (detail.isCancelled) return false;
-    final created = detail.order.createdAt;
-    final now = DateTime.now();
-    return created.year == now.year &&
-        created.month == now.month &&
-        created.day == now.day;
-  }
+  bool get _canCancel => canCancelOrder(detail.order);
+  bool get _canComplete => canCompleteOrder(detail.order);
 
   @override
   Widget build(BuildContext context) {
@@ -121,9 +147,10 @@ class _OrderDetailBody extends StatelessWidget {
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
       children: [
         Padding(
-          padding: const EdgeInsets.all(AppSizes.md),
+          padding: const EdgeInsets.fromLTRB(AppSizes.md, AppSizes.md, AppSizes.sm, AppSizes.md),
           child: Row(
             children: [
               Expanded(
@@ -147,7 +174,7 @@ class _OrderDetailBody extends StatelessWidget {
           ),
         ),
         const Divider(height: 1),
-        Expanded(
+        Flexible(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppSizes.md),
             child: Column(
@@ -156,6 +183,7 @@ class _OrderDetailBody extends StatelessWidget {
                 OrderTypeBadge(
                   orderType: order.orderType,
                   isCancelled: detail.isCancelled,
+                  isCompleted: detail.isCompleted,
                 ),
                 const SizedBox(height: AppSizes.md),
                 if (orderType == OrderType.dineIn && detail.tableName != null)
@@ -217,6 +245,14 @@ class _OrderDetailBody extends StatelessWidget {
                 icon: const Icon(Icons.receipt_long_outlined),
                 label: const Text('Print Receipt'),
               ),
+              if (_canComplete) ...[
+                const SizedBox(height: AppSizes.sm),
+                ElevatedButton.icon(
+                  onPressed: onComplete,
+                  icon: const Icon(Icons.check_circle_outline),
+                  label: const Text('Complete Order'),
+                ),
+              ],
               if (_canCancel) ...[
                 const SizedBox(height: AppSizes.sm),
                 OutlinedButton(
@@ -267,4 +303,63 @@ class _OrderDetailBody extends StatelessWidget {
       ),
     );
   }
+}
+
+bool canCancelOrder(Order order) {
+  if (!OrderStatus.isOpen(order.status)) return false;
+  final created = order.createdAt;
+  final now = DateTime.now();
+  return created.year == now.year &&
+      created.month == now.month &&
+      created.day == now.day;
+}
+
+bool canCompleteOrder(Order order) => OrderStatus.isOpen(order.status);
+
+Future<bool> confirmAndCompleteOrder(
+  BuildContext context,
+  WidgetRef ref,
+  Order order,
+) async {
+  if (!canCompleteOrder(order)) return false;
+
+  final confirmed = await showConfirmationDialog(
+    context: context,
+    title: 'Complete Order',
+    message: 'Mark order ${order.orderNumber} as completed?',
+    confirmLabel: 'Complete',
+  );
+  if (confirmed != true) return false;
+
+  await ref.read(ordersNotifierProvider.notifier).completeOrder(order.id);
+  return true;
+}
+
+Future<bool> confirmAndCancelOrder(
+  BuildContext context,
+  WidgetRef ref,
+  Order order,
+) async {
+  if (!canCancelOrder(order)) {
+    if (OrderStatus.isCancelled(order.status)) return false;
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Only today\'s orders can be cancelled'),
+        ),
+      );
+    }
+    return false;
+  }
+
+  final confirmed = await showConfirmationDialog(
+    context: context,
+    title: 'Cancel Order',
+    message: 'Cancel order ${order.orderNumber}?',
+    confirmLabel: 'Cancel Order',
+  );
+  if (confirmed != true) return false;
+
+  await ref.read(ordersNotifierProvider.notifier).cancelOrder(order.id);
+  return true;
 }

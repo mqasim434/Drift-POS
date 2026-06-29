@@ -49,74 +49,104 @@ class ProductMenuCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
       child: InkWell(
         onTap: onAdd,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Stack(
-              children: [
-                SizedBox(
-                  height: 100,
-                  width: double.infinity,
-                  child: ProductImageWidget(
+            Expanded(
+              flex: 13,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ProductImageWidget(
                     imagePath: _imagePath,
                     productName: _name,
                     placeholderColor: _placeholderColor,
-                    size: 100,
                     borderRadius: 0,
+                    fill: true,
                   ),
-                ),
-                if (_isDeal)
-                  Positioned(
-                    top: AppSizes.sm,
-                    left: AppSizes.sm,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSizes.sm,
-                        vertical: AppSizes.xs,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.accent,
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.badgeRadius),
-                      ),
-                      child: Text(
-                        'DEAL',
-                        style: AppTextStyles.labelSmall.copyWith(
-                          color: AppColors.textPrimary,
+                  if (_isDeal)
+                    Positioned(
+                      top: AppSizes.sm,
+                      left: AppSizes.sm,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppSizes.sm,
+                          vertical: AppSizes.xs,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.accent,
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.badgeRadius),
+                        ),
+                        child: Text(
+                          'DEAL',
+                          style: AppTextStyles.labelSmall.copyWith(
+                            color: AppColors.textPrimary,
+                          ),
                         ),
                       ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
             Expanded(
+              flex: 10,
               child: Padding(
-                padding: const EdgeInsets.all(AppSizes.sm),
+                padding: const EdgeInsets.fromLTRB(
+                  AppSizes.sm,
+                  AppSizes.sm,
+                  AppSizes.sm,
+                  AppSizes.sm,
+                ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
                       _name,
-                      style: AppTextStyles.subtitle,
+                      style: AppTextStyles.body.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
                     const Spacer(),
-                    Text(
-                      _priceLabel,
-                      style: AppTextStyles.price,
-                    ),
-                    const SizedBox(height: AppSizes.sm),
-                    OutlinedButton(
-                      onPressed: onAdd,
-                      style: OutlinedButton.styleFrom(
-                        minimumSize: const Size.fromHeight(AppSizes.controlHeight),
-                        foregroundColor: AppColors.accent,
-                        side: const BorderSide(color: AppColors.borderStrong),
-                      ),
-                      child: const Text('+ Add'),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            _priceLabel,
+                            style: AppTextStyles.price.copyWith(fontSize: 14),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: AppSizes.xs),
+                        Material(
+                          color: AppColors.accentBg,
+                          borderRadius:
+                              BorderRadius.circular(AppSizes.buttonRadius),
+                          child: InkWell(
+                            onTap: onAdd,
+                            borderRadius:
+                                BorderRadius.circular(AppSizes.buttonRadius),
+                            child: const Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: AppSizes.sm,
+                                vertical: AppSizes.xs,
+                              ),
+                              child: Icon(
+                                Icons.add,
+                                size: 18,
+                                color: AppColors.accent,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

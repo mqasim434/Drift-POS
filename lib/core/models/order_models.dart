@@ -1,4 +1,5 @@
 import '../database/app_database.dart';
+import 'order_status.dart';
 
 class OrderSummary {
   const OrderSummary({
@@ -9,7 +10,9 @@ class OrderSummary {
   final Order order;
   final int itemCount;
 
-  bool get isCancelled => order.status == 'cancelled';
+  bool get isCancelled => OrderStatus.isCancelled(order.status);
+  bool get isCompleted => OrderStatus.isCompleted(order.status);
+  bool get isOpen => OrderStatus.isOpen(order.status);
 }
 
 class OrderWithItems {
@@ -26,7 +29,9 @@ class OrderWithItems {
   int get itemCount =>
       items.fold<int>(0, (sum, item) => sum + item.quantity);
 
-  bool get isCancelled => order.status == 'cancelled';
+  bool get isCancelled => OrderStatus.isCancelled(order.status);
+  bool get isCompleted => OrderStatus.isCompleted(order.status);
+  bool get isOpen => OrderStatus.isOpen(order.status);
 }
 
 class OrdersStats {
@@ -52,7 +57,7 @@ class OrdersStats {
   final int deliveryCount;
 
   factory OrdersStats.fromOrders(List<Order> orders) {
-    final active = orders.where((order) => order.status != 'cancelled');
+    final active = orders.where((order) => OrderStatus.isActive(order.status));
     return OrdersStats(
       totalOrders: active.length,
       revenueInPaisa: active.fold(0, (sum, order) => sum + order.totalInPaisa),

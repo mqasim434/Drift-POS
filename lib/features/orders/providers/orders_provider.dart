@@ -25,8 +25,6 @@ Future<OrderWithItems?> loadOrderWithItems(AppDatabase db, int orderId) async {
 final ordersFilterProvider =
     StateProvider<OrdersDateRange>((ref) => OrdersDateRange.today());
 
-final selectedOrderIdProvider = StateProvider<int?>((ref) => null);
-
 final filteredOrdersProvider = StreamProvider<List<OrderSummary>>((ref) async* {
   final range = ref.watch(ordersFilterProvider);
   final db = ref.watch(databaseProvider);
@@ -55,14 +53,6 @@ final ordersStatsProvider = Provider<OrdersStats>((ref) {
   );
 });
 
-final selectedOrderProvider = FutureProvider<OrderWithItems?>((ref) async {
-  final orderId = ref.watch(selectedOrderIdProvider);
-  if (orderId == null) return null;
-
-  final db = ref.watch(databaseProvider);
-  return loadOrderWithItems(db, orderId);
-});
-
 final ordersNotifierProvider =
     AsyncNotifierProvider<OrdersNotifier, void>(OrdersNotifier.new);
 
@@ -73,10 +63,13 @@ class OrdersNotifier extends AsyncNotifier<void> {
   Future<void> cancelOrder(int id) async {
     await ref.read(databaseProvider).ordersDao.cancelOrder(id);
   }
+
+  Future<void> completeOrder(int id) async {
+    await ref.read(databaseProvider).ordersDao.completeOrder(id);
+  }
 }
 
 void setOrdersQuickFilter(WidgetRef ref, QuickFilter filter) {
-  ref.read(selectedOrderIdProvider.notifier).state = null;
   ref.read(ordersFilterProvider.notifier).state = switch (filter) {
     QuickFilter.today => OrdersDateRange.today(),
     QuickFilter.yesterday => OrdersDateRange.yesterday(),
@@ -87,7 +80,6 @@ void setOrdersQuickFilter(WidgetRef ref, QuickFilter filter) {
 }
 
 void setOrdersCustomRange(WidgetRef ref, DateTime from, DateTime to) {
-  ref.read(selectedOrderIdProvider.notifier).state = null;
   ref.read(ordersFilterProvider.notifier).state =
       OrdersDateRange.custom(from, to);
 }

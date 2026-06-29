@@ -2278,7 +2278,7 @@ class $OrdersTable extends Orders with TableInfo<$OrdersTable, Order> {
       'status', aliasedName, false,
       type: DriftSqlType.string,
       requiredDuringInsert: false,
-      defaultValue: const Constant('completed'));
+      defaultValue: const Constant('open'));
   static const VerificationMeta _notesMeta = const VerificationMeta('notes');
   @override
   late final GeneratedColumn<String> notes = GeneratedColumn<String>(

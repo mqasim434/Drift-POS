@@ -10,15 +10,20 @@ class OrderTypeBadge extends StatelessWidget {
     super.key,
     required this.orderType,
     this.isCancelled = false,
+    this.isCompleted = false,
   });
 
   final String orderType;
   final bool isCancelled;
+  final bool isCompleted;
 
   @override
   Widget build(BuildContext context) {
     if (isCancelled) {
       return _badge('Cancelled', AppColors.danger, AppColors.dangerBg);
+    }
+    if (isCompleted) {
+      return _badge('Completed', AppColors.success, AppColors.successBg);
     }
 
     final type = OrderType.fromDbValue(orderType);

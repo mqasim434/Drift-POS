@@ -28,7 +28,7 @@ class ShopSettings {
   final String? defaultPrinterUrl;
 
   static const defaults = ShopSettings(
-    shopName: 'QuickPOS',
+    shopName: 'DriftPOS',
     address: '',
     phone: '',
     currencySymbol: 'PKR',

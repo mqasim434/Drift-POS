@@ -55,6 +55,6 @@ class SeedService {
     );
 
     await prefs.setBool(_seedKey, true);
-    debugPrint('Drift POS: Seed categories inserted');
+    debugPrint('DriftPOS: Seed categories inserted');
   }
 }

@@ -1,6 +1,6 @@
 {
-    "name": "drift_pos",
-    "short_name": "drift_pos",
+    "name": "DriftPOS",
+    "short_name": "DriftPOS",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

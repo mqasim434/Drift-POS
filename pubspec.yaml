@@ -1,5 +1,5 @@
 name: drift_pos
-description: "Drift POS — Restaurant Point of Sale System"
+description: "DriftPOS — Restaurant Point of Sale System"
 publish_to: 'none'
 
 version: 1.0.0+1

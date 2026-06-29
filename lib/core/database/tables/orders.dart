@@ -16,7 +16,7 @@ class Orders extends Table {
   IntColumn get discountInPaisa => integer().withDefault(const Constant(0))();
   IntColumn get totalInPaisa => integer()();
   TextColumn get status =>
-      text().withDefault(const Constant('completed'))();
+      text().withDefault(const Constant('open'))();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();

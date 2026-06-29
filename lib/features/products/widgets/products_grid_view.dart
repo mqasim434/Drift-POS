@@ -30,71 +30,127 @@ class ProductGridCard extends ConsumerWidget {
 
     return Card(
       clipBehavior: Clip.antiAlias,
+      margin: EdgeInsets.zero,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          SizedBox(
-            height: 120,
-            width: double.infinity,
+          Expanded(
+            flex: 13,
             child: ProductImageWidget(
               imagePath: product.imagePath,
               productName: product.name,
               placeholderColor: categoryColor,
-              size: 120,
               borderRadius: 0,
+              fill: true,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(AppSizes.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  product.name,
-                  style: AppTextStyles.subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: AppSizes.xs),
-                Text(item.categoryName, style: AppTextStyles.caption),
-                const SizedBox(height: AppSizes.sm),
-                Row(
-                  children: [
-                    Text(
-                      CurrencyFormatter.format(product.priceInPaisa),
-                      style: AppTextStyles.price,
+          Expanded(
+            flex: 10,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSizes.sm,
+                AppSizes.sm,
+                AppSizes.sm,
+                AppSizes.sm,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    product.name,
+                    style: AppTextStyles.body.copyWith(
+                      fontWeight: FontWeight.w600,
                     ),
-                    const Spacer(),
-                    Switch(
-                      value: product.isAvailable,
-                      onChanged: (_) => ref
-                          .read(productsNotifierProvider.notifier)
-                          .toggleAvailability(product.id),
-                    ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      tooltip: 'Edit',
-                      onPressed: () => onEdit(product),
-                      icon: const Icon(Icons.edit_outlined),
-                    ),
-                    IconButton(
-                      tooltip: 'Delete',
-                      onPressed: () => onDelete(product),
-                      icon: const Icon(
-                        Icons.delete_outline,
-                        color: AppColors.danger,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    item.categoryName,
+                    style: AppTextStyles.caption,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const Spacer(),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          CurrencyFormatter.format(product.priceInPaisa),
+                          style: AppTextStyles.price.copyWith(fontSize: 14),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      Transform.scale(
+                        scale: 0.85,
+                        child: Switch(
+                          value: product.isAvailable,
+                          materialTapTargetSize:
+                              MaterialTapTargetSize.shrinkWrap,
+                          onChanged: (_) => ref
+                              .read(productsNotifierProvider.notifier)
+                              .toggleAvailability(product.id),
+                        ),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      _ActionChip(
+                        icon: Icons.edit_outlined,
+                        tooltip: 'Edit',
+                        onPressed: () => onEdit(product),
+                      ),
+                      const SizedBox(width: AppSizes.xs),
+                      _ActionChip(
+                        icon: Icons.delete_outline,
+                        tooltip: 'Delete',
+                        color: AppColors.danger,
+                        onPressed: () => onDelete(product),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+    this.color = AppColors.accent,
+  });
+
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppSizes.buttonRadius),
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(AppSizes.buttonRadius),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSizes.xs),
+            child: Icon(icon, size: 18, color: color),
+          ),
+        ),
       ),
     );
   }
@@ -116,15 +172,15 @@ class ProductsGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final columns = constraints.maxWidth >= AppSizes.breakpointLg ? 4 : 3;
+        final columns = constraints.maxWidth >= 700 ? 5 : 3;
 
         return GridView.builder(
           padding: const EdgeInsets.all(AppSizes.lg),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: columns,
-            crossAxisSpacing: AppSizes.md,
-            mainAxisSpacing: AppSizes.md,
-            childAspectRatio: 0.78,
+            crossAxisSpacing: AppSizes.sm,
+            mainAxisSpacing: AppSizes.sm,
+            childAspectRatio: 0.82,
           ),
           itemCount: items.length,
           itemBuilder: (context, index) {

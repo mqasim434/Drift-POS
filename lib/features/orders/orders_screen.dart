@@ -6,7 +6,6 @@ import '../../core/constants/app_sizes.dart';
 import '../../shared/layouts/feature_scaffold.dart';
 import '../../shared/widgets/empty_state.dart';
 import 'providers/orders_provider.dart';
-import 'widgets/order_detail_panel.dart';
 import 'widgets/orders_filter_bar.dart';
 import 'widgets/orders_stats_row.dart';
 import 'widgets/orders_table_view.dart';
@@ -17,7 +16,6 @@ class OrdersScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(filteredOrdersProvider);
-    final selectedOrderId = ref.watch(selectedOrderIdProvider);
 
     return FeatureScaffold(
       title: 'Orders',
@@ -44,45 +42,7 @@ class OrdersScreen extends ConsumerWidget {
                     );
                   }
 
-                  return LayoutBuilder(
-                    builder: (context, constraints) {
-                      final useSplitView =
-                          constraints.maxWidth >= AppSizes.breakpointMd;
-
-                      if (!useSplitView && selectedOrderId != null) {
-                        return OrderDetailPanel(
-                          onClose: () => ref
-                              .read(selectedOrderIdProvider.notifier)
-                              .state = null,
-                        );
-                      }
-
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            flex: 6,
-                            child: OrdersTableView(
-                              orders: orders,
-                              selectedOrderId: selectedOrderId,
-                              onSelect: (id) => ref
-                                  .read(selectedOrderIdProvider.notifier)
-                                  .state = id,
-                            ),
-                          ),
-                          if (useSplitView)
-                            Expanded(
-                              flex: 4,
-                              child: OrderDetailPanel(
-                                onClose: () => ref
-                                    .read(selectedOrderIdProvider.notifier)
-                                    .state = null,
-                              ),
-                            ),
-                        ],
-                      );
-                    },
-                  );
+                  return OrdersTableView(orders: orders);
                 },
                 loading: () => const Center(child: Text('Loading orders...')),
                 error: (error, _) => Center(

@@ -83,20 +83,16 @@ class MenuScreen extends ConsumerWidget {
                           : LayoutBuilder(
                               builder: (context, constraints) {
                                 final width = constraints.maxWidth;
-                                final columns = width >= AppSizes.breakpointXl
-                                    ? 5
-                                    : width >= 1440
-                                        ? 4
-                                        : 3;
+                                final columns = width >= 700 ? 5 : 3;
 
                                 return GridView.builder(
                                   padding: const EdgeInsets.all(AppSizes.lg),
                                   gridDelegate:
                                       SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: columns,
-                                    crossAxisSpacing: AppSizes.md,
-                                    mainAxisSpacing: AppSizes.md,
-                                    childAspectRatio: 0.72,
+                                    crossAxisSpacing: AppSizes.sm,
+                                    mainAxisSpacing: AppSizes.sm,
+                                    childAspectRatio: 0.82,
                                   ),
                                   itemCount: entries.length,
                                   itemBuilder: (context, index) {

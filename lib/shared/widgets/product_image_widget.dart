@@ -15,6 +15,7 @@ class ProductImageWidget extends StatelessWidget {
     this.placeholderColor = AppColors.surfaceElevated,
     this.size = AppSizes.controlHeightLg,
     this.borderRadius = AppSizes.buttonRadius,
+    this.fill = false,
   });
 
   final String? imagePath;
@@ -22,6 +23,7 @@ class ProductImageWidget extends StatelessWidget {
   final Color placeholderColor;
   final double size;
   final double borderRadius;
+  final bool fill;
 
   @override
   Widget build(BuildContext context) {
@@ -32,20 +34,36 @@ class ProductImageWidget extends StatelessWidget {
         if (file != null) {
           return ClipRRect(
             borderRadius: BorderRadius.circular(borderRadius),
-            child: Image.file(
-              file,
-              width: size,
-              height: size,
-              fit: BoxFit.cover,
-              cacheWidth: size.toInt() * 2,
-              cacheHeight: size.toInt() * 2,
-              errorBuilder: (_, __, ___) => _Placeholder(
-                productName: productName,
-                placeholderColor: placeholderColor,
-                size: size,
-                borderRadius: borderRadius,
-              ),
-            ),
+            child: fill
+                ? Image.file(
+                    file,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    height: double.infinity,
+                    cacheWidth: 400,
+                    errorBuilder: (_, __, ___) => _Placeholder(
+                      productName: productName,
+                      placeholderColor: placeholderColor,
+                      size: size,
+                      borderRadius: borderRadius,
+                      fill: fill,
+                    ),
+                  )
+                : Image.file(
+                    file,
+                    width: size,
+                    height: size,
+                    fit: BoxFit.cover,
+                    cacheWidth: size.toInt() * 2,
+                    cacheHeight: size.toInt() * 2,
+                    errorBuilder: (_, __, ___) => _Placeholder(
+                      productName: productName,
+                      placeholderColor: placeholderColor,
+                      size: size,
+                      borderRadius: borderRadius,
+                      fill: fill,
+                    ),
+                  ),
           );
         }
 
@@ -54,6 +72,7 @@ class ProductImageWidget extends StatelessWidget {
           placeholderColor: placeholderColor,
           size: size,
           borderRadius: borderRadius,
+          fill: fill,
         );
       },
     );
@@ -66,12 +85,14 @@ class _Placeholder extends StatelessWidget {
     required this.placeholderColor,
     required this.size,
     required this.borderRadius,
+    this.fill = false,
   });
 
   final String productName;
   final Color placeholderColor;
   final double size;
   final double borderRadius;
+  final bool fill;
 
   @override
   Widget build(BuildContext context) {
@@ -79,17 +100,20 @@ class _Placeholder extends StatelessWidget {
         productName.isNotEmpty ? productName.characters.first.toUpperCase() : '?';
 
     return Container(
-      width: size,
-      height: size,
+      width: fill ? double.infinity : size,
+      height: fill ? double.infinity : size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: placeholderColor.withValues(alpha: 0.35),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: AppColors.border),
+        border: fill ? null : Border.all(color: AppColors.border),
       ),
       child: Text(
         initial,
-        style: AppTextStyles.title.copyWith(color: placeholderColor),
+        style: AppTextStyles.title.copyWith(
+          color: placeholderColor,
+          fontSize: fill ? 28 : null,
+        ),
       ),
     );
   }
