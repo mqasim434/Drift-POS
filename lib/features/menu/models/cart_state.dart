@@ -1,6 +1,5 @@
 import 'package:equatable/equatable.dart';
 
-import '../../../core/constants/tax_settings.dart';
 import '../../../core/models/order_type.dart';
 import 'cart_item.dart';
 
@@ -29,10 +28,6 @@ class CartState extends Equatable {
 
   int get subtotalInPaisa =>
       items.fold(0, (sum, item) => sum + item.lineTotalInPaisa);
-
-  int get taxInPaisa => (subtotalInPaisa * TaxSettings.taxRate).round();
-
-  int get totalInPaisa => subtotalInPaisa + taxInPaisa;
 
   bool get isEmpty => items.isEmpty;
 

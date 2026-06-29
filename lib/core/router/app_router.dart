@@ -10,8 +10,8 @@ import '../../features/orders/orders_screen.dart';
 import '../../features/menu/menu_screen.dart';
 import '../../features/tables/tables_screen.dart';
 import '../../features/products/products_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../shared/layouts/main_layout.dart';
-import '../../shared/widgets/feature_placeholder_screen.dart';
 
 final appRouter = GoRouter(
   initialLocation: NavItem.dashboard.route,
@@ -70,8 +70,7 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: NavItem.settings.route,
-          builder: (context, state) =>
-              const FeaturePlaceholderScreen(navItem: NavItem.settings),
+          builder: (context, state) => const SettingsScreen(),
         ),
       ],
     ),

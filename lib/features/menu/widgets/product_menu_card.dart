@@ -15,18 +15,21 @@ class ProductMenuCard extends StatelessWidget {
     this.product,
     this.deal,
     required this.onAdd,
+    this.displayPriceInPaisa,
   }) : assert(product != null || deal != null);
 
   final MenuProduct? product;
   final DealWithItems? deal;
   final VoidCallback onAdd;
+  final int? displayPriceInPaisa;
 
   bool get _isDeal => deal != null;
 
   String get _name => _isDeal ? deal!.name : product!.name;
 
   int get _priceInPaisa =>
-      _isDeal ? deal!.priceInPaisa : product!.displayPriceInPaisa;
+      displayPriceInPaisa ??
+      (_isDeal ? deal!.priceInPaisa : product!.displayPriceInPaisa);
 
   String get _priceLabel {
     if (_isDeal) return CurrencyFormatter.format(_priceInPaisa);

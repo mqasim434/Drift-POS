@@ -61,6 +61,17 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
     );
   }
 
+  Future<List<Order>> getOrdersInRange(DateTime from, DateTime to) {
+    return (select(orders)
+          ..where(
+            (o) =>
+                o.createdAt.isBiggerOrEqualValue(from) &
+                o.createdAt.isSmallerThanValue(to),
+          )
+          ..orderBy([(o) => OrderingTerm.asc(o.createdAt)]))
+        .get();
+  }
+
   Future<int> countOrdersInRange(DateTime from, DateTime to) async {
     final countExp = orders.id.count();
     final query = selectOnly(orders)

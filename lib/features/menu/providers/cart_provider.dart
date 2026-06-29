@@ -7,6 +7,8 @@ import '../../../core/models/menu_catalog.dart';
 import '../../../core/models/order_type.dart';
 import '../../../core/providers/database_provider.dart';
 import '../../../core/models/placed_order_result.dart';
+import '../../../core/models/cart_totals.dart';
+import '../../../core/providers/shop_settings_provider.dart';
 import '../../../core/utils/order_number_generator.dart';
 import '../models/cart_item.dart';
 import '../models/cart_state.dart';
@@ -168,6 +170,11 @@ class CartNotifier extends Notifier<CartState> {
       final to = from.add(const Duration(days: 1));
       final dailyCount = await db.ordersDao.countOrdersInRange(from, to);
       final orderNumber = OrderNumberGenerator.generate(dailyCount);
+      final settings = await ref.read(shopSettingsProvider.future);
+      final totals = CartTotals.fromCart(
+        subtotalInPaisa: state.subtotalInPaisa,
+        settings: settings,
+      );
 
       var orderId = 0;
 
@@ -188,9 +195,9 @@ class CartNotifier extends Notifier<CartState> {
             deliveryAddress: state.orderType == OrderType.delivery
                 ? Value(state.deliveryAddress.trim())
                 : const Value.absent(),
-            subtotalInPaisa: state.subtotalInPaisa,
-            taxInPaisa: Value(state.taxInPaisa),
-            totalInPaisa: state.totalInPaisa,
+            subtotalInPaisa: totals.subtotalInPaisa,
+            taxInPaisa: Value(totals.taxInPaisa),
+            totalInPaisa: totals.totalInPaisa,
             notes: state.notes.trim().isEmpty
                 ? const Value.absent()
                 : Value(state.notes.trim()),

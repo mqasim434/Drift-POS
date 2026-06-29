@@ -7,40 +7,44 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../constants/receipt_paper_format.dart';
 import '../database/app_database.dart';
 import '../models/order_models.dart';
 import '../models/order_type.dart';
 import '../models/shop_settings.dart';
 import '../utils/date_formatter.dart';
+import 'receipt_test_order.dart';
 
 class ReceiptService {
   const ReceiptService();
 
   Future<Uint8List> generateReceiptPdf(
     OrderWithItems order,
-    ShopSettings settings,
-  ) async {
+    ShopSettings settings, {
+    PdfPageFormat pageFormat = ReceiptPaperFormat.defaultFormat,
+  }) async {
     final font = pw.Font.courier();
     final fontBold = pw.Font.courierBold();
     final doc = pw.Document();
     final orderType = OrderType.fromDbValue(order.order.orderType);
+    final thermalFormat = _thermalPageFormat(pageFormat);
+    final dashCount = _dashCharacterCount(thermalFormat);
 
     doc.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.roll80,
-        margin: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 12),
+        pageFormat: thermalFormat,
         build: (context) {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
               ..._buildHeader(settings, font, fontBold),
-              _dashedLine(font),
+              _dashedLine(font, dashCount),
               ..._buildOrderMeta(order, settings, orderType, font),
-              _dashedLine(font),
+              _dashedLine(font, dashCount),
               ..._buildLineItems(order, settings, font),
-              _dashedLine(font),
+              _dashedLine(font, dashCount),
               ..._buildTotals(order, settings, font, fontBold),
-              _dashedLine(font),
+              _dashedLine(font, dashCount),
               pw.SizedBox(height: 8),
               pw.Text(
                 settings.thankYouMessage,
@@ -60,14 +64,80 @@ class ReceiptService {
     return doc.save();
   }
 
+  /// Always use thermal roll dimensions — ignore A4/Letter from the print dialog.
+  PdfPageFormat _thermalPageFormat(PdfPageFormat format) {
+    if (format.width <= 58 * PdfPageFormat.mm + 1) {
+      return ReceiptPaperFormat.thermal58;
+    }
+    return ReceiptPaperFormat.defaultFormat;
+  }
+
+  int _dashCharacterCount(PdfPageFormat format) {
+    final printableMm = format.availableWidth / PdfPageFormat.mm;
+    if (printableMm <= 52) return 20;
+    return 32;
+  }
+
   Future<void> printReceipt(
     OrderWithItems order,
     ShopSettings settings,
   ) async {
-    await Printing.layoutPdf(
-      format: PdfPageFormat.roll80,
+    await _printPdf(
+      settings: settings,
+      name: 'Receipt ${order.order.orderNumber}',
       onLayout: (_) => generateReceiptPdf(order, settings),
     );
+  }
+
+  Future<void> printTestReceipt(ShopSettings settings) async {
+    final sample = buildTestReceiptOrder(settings);
+    await _printPdf(
+      settings: settings,
+      name: 'Test Receipt',
+      onLayout: (_) => generateReceiptPdf(sample, settings),
+    );
+  }
+
+  Future<void> _printPdf({
+    required ShopSettings settings,
+    required String name,
+    required LayoutCallback onLayout,
+  }) async {
+    final printer = await _resolveDefaultPrinter(settings);
+
+    if (printer != null) {
+      await Printing.directPrintPdf(
+        printer: printer,
+        name: name,
+        format: ReceiptPaperFormat.defaultFormat,
+        dynamicLayout: true,
+        usePrinterSettings: false,
+        onLayout: onLayout,
+      );
+      return;
+    }
+
+    await Printing.layoutPdf(
+      name: name,
+      format: ReceiptPaperFormat.defaultFormat,
+      dynamicLayout: true,
+      usePrinterSettings: false,
+      onLayout: onLayout,
+    );
+  }
+
+  Future<Printer?> _resolveDefaultPrinter(ShopSettings settings) async {
+    final url = settings.defaultPrinterUrl;
+    if (url == null || url.isEmpty) return null;
+
+    final info = await Printing.info();
+    if (!info.canListPrinters) return null;
+
+    final printers = await Printing.listPrinters();
+    for (final printer in printers) {
+      if (printer.url == url && printer.isAvailable) return printer;
+    }
+    return null;
   }
 
   Future<void> showPreview(
@@ -107,13 +177,18 @@ class ReceiptService {
               ),
               Expanded(
                 child: PdfPreview(
-                  maxPageWidth: 80 * PdfPageFormat.mm,
+                  initialPageFormat: ReceiptPaperFormat.defaultFormat,
+                  pageFormats: ReceiptPaperFormat.previewFormats,
+                  maxPageWidth: ReceiptPaperFormat.defaultFormat.width,
                   canChangeOrientation: false,
                   canChangePageFormat: false,
                   canDebug: false,
                   allowPrinting: true,
                   allowSharing: true,
-                  build: (_) => generateReceiptPdf(order, settings),
+                  dynamicLayout: true,
+                  pdfFileName: 'receipt-${order.order.orderNumber}.pdf',
+                  build: (format) =>
+                      generateReceiptPdf(order, settings, pageFormat: format),
                 ),
               ),
             ],
@@ -327,11 +402,11 @@ class ReceiptService {
     );
   }
 
-  pw.Widget _dashedLine(pw.Font font) {
+  pw.Widget _dashedLine(pw.Font font, int count) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 8),
       child: pw.Text(
-        '-' * 24,
+        '-' * count,
         style: pw.TextStyle(font: font, fontSize: 9),
         textAlign: pw.TextAlign.center,
       ),

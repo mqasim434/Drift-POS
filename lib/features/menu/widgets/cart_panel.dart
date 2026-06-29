@@ -4,8 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_sizes.dart';
 import '../../../core/constants/app_text_styles.dart';
-import '../../../core/constants/tax_settings.dart';
 import '../../../core/models/order_type.dart';
+import '../../../core/providers/cart_totals_provider.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../models/cart_item.dart';
@@ -98,8 +98,11 @@ class _CartPanelState extends ConsumerState<CartPanel> {
   @override
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
+    final totals = ref.watch(cartTotalsProvider);
     final tablesAsync = ref.watch(activeTablesProvider);
-    final taxPercent = (TaxSettings.taxRate * 100).toStringAsFixed(0);
+    final taxPercent = totals.taxRatePercent.toStringAsFixed(
+      totals.taxRatePercent.truncateToDouble() == totals.taxRatePercent ? 0 : 1,
+    );
 
     return Container(
       width: AppSizes.cartPanelWidth,
@@ -242,12 +245,15 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                   ),
                 ),
                 const SizedBox(height: AppSizes.md),
-                _totalRow('Subtotal', CurrencyFormatter.format(cart.subtotalInPaisa)),
-                _totalRow('Tax ($taxPercent%)', CurrencyFormatter.format(cart.taxInPaisa)),
+                _totalRow('Subtotal', CurrencyFormatter.format(totals.subtotalInPaisa)),
+                _totalRow(
+                  '${totals.taxLabel} ($taxPercent%)',
+                  CurrencyFormatter.format(totals.taxInPaisa),
+                ),
                 const Divider(height: AppSizes.lg),
                 _totalRow(
                   'Total',
-                  CurrencyFormatter.format(cart.totalInPaisa),
+                  CurrencyFormatter.format(totals.totalInPaisa),
                   emphasize: true,
                 ),
                 const SizedBox(height: AppSizes.md),

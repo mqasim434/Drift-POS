@@ -7,6 +7,8 @@ import '../../core/models/menu_catalog.dart';
 import '../../shared/layouts/feature_scaffold.dart';
 import '../../shared/widgets/debounced_search_field.dart';
 import '../../shared/widgets/empty_state.dart';
+import '../../core/models/cart_totals.dart';
+import '../../core/providers/cart_totals_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/menu_catalog_provider.dart';
 import 'widgets/cart_panel.dart';
@@ -37,6 +39,7 @@ class MenuScreen extends ConsumerWidget {
     final catalogAsync = ref.watch(menuCatalogProvider);
     final categoryId = ref.watch(menuCategoryFilterProvider);
     final searchQuery = ref.watch(menuSearchProvider);
+    final shopSettings = ref.watch(currentShopSettingsProvider);
 
     return FeatureScaffold(
       title: 'Menu',
@@ -102,6 +105,8 @@ class MenuScreen extends ConsumerWidget {
                                       final deal = entry.deal!;
                                       return ProductMenuCard(
                                         deal: deal,
+                                        displayPriceInPaisa: shopSettings
+                                            .priceWithOptionalTax(deal.priceInPaisa),
                                         onAdd: () => ref
                                             .read(cartProvider.notifier)
                                             .addDeal(deal),
@@ -111,6 +116,10 @@ class MenuScreen extends ConsumerWidget {
                                     final product = entry.product!;
                                     return ProductMenuCard(
                                       product: product,
+                                      displayPriceInPaisa: shopSettings
+                                          .priceWithOptionalTax(
+                                            product.displayPriceInPaisa,
+                                          ),
                                       onAdd: () => _addProductToCart(
                                         context,
                                         ref,
