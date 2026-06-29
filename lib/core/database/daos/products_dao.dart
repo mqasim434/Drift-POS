@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import '../app_database.dart';
 import '../tables/categories.dart';
 import '../tables/products.dart';
+import '../../models/menu_catalog.dart';
 import '../../models/product_filter.dart';
 import '../../models/product_with_category.dart';
 
@@ -110,5 +111,34 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
 
   Future<int> deleteProduct(int id) {
     return (delete(products)..where((p) => p.id.equals(id))).go();
+  }
+
+  Future<List<MenuProduct>> getAllAvailableForMenu() async {
+    final rows = await (select(products).join([
+      innerJoin(categories, categories.id.equalsExp(products.categoryId)),
+    ])
+          ..where(
+            products.isAvailable.equals(true) &
+                categories.isActive.equals(true),
+          )
+          ..orderBy([
+            OrderingTerm.asc(products.sortOrder),
+            OrderingTerm.asc(products.name),
+          ]))
+        .get();
+
+    return rows
+        .map(
+          (row) => MenuProduct(
+            id: row.readTable(products).id,
+            name: row.readTable(products).name,
+            priceInPaisa: row.readTable(products).priceInPaisa,
+            categoryId: row.readTable(products).categoryId,
+            categoryName: row.readTable(categories).name,
+            categoryColor: row.readTable(categories).color,
+            imagePath: row.readTable(products).imagePath,
+          ),
+        )
+        .toList();
   }
 }

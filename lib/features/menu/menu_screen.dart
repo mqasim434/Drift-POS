@@ -1,0 +1,123 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_sizes.dart';
+import '../../shared/layouts/feature_scaffold.dart';
+import '../../shared/widgets/debounced_search_field.dart';
+import '../../shared/widgets/empty_state.dart';
+import 'providers/cart_provider.dart';
+import 'providers/menu_catalog_provider.dart';
+import 'widgets/cart_panel.dart';
+import 'widgets/category_tabs.dart';
+import 'widgets/product_menu_card.dart';
+
+class MenuScreen extends ConsumerWidget {
+  const MenuScreen({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final catalogAsync = ref.watch(menuCatalogProvider);
+    final categoryId = ref.watch(menuCategoryFilterProvider);
+    final searchQuery = ref.watch(menuSearchProvider);
+
+    return FeatureScaffold(
+      title: 'Menu',
+      body: catalogAsync.when(
+        data: (catalog) {
+          final entries = filterMenuEntries(
+            catalog: catalog,
+            categoryId: categoryId,
+            searchQuery: searchQuery,
+          );
+          final counts = categoryProductCounts(catalog);
+
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    CategoryTabs(productCounts: counts),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(
+                        AppSizes.lg,
+                        AppSizes.sm,
+                        AppSizes.lg,
+                        AppSizes.md,
+                      ),
+                      child: DebouncedSearchField(
+                        hintText: 'Search menu...',
+                        width: 300,
+                        onChanged: (query) =>
+                            ref.read(menuSearchProvider.notifier).state = query,
+                      ),
+                    ),
+                    Expanded(
+                      child: entries.isEmpty
+                          ? const EmptyState(
+                              message: 'No items match your search',
+                              icon: Icons.restaurant_menu,
+                            )
+                          : LayoutBuilder(
+                              builder: (context, constraints) {
+                                final width = constraints.maxWidth;
+                                final columns = width >= AppSizes.breakpointXl
+                                    ? 5
+                                    : width >= 1440
+                                        ? 4
+                                        : 3;
+
+                                return GridView.builder(
+                                  padding: const EdgeInsets.all(AppSizes.lg),
+                                  gridDelegate:
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: columns,
+                                    crossAxisSpacing: AppSizes.md,
+                                    mainAxisSpacing: AppSizes.md,
+                                    childAspectRatio: 0.72,
+                                  ),
+                                  itemCount: entries.length,
+                                  itemBuilder: (context, index) {
+                                    final entry = entries[index];
+                                    if (entry.isDeal) {
+                                      final deal = entry.deal!;
+                                      return ProductMenuCard(
+                                        deal: deal,
+                                        onAdd: () => ref
+                                            .read(cartProvider.notifier)
+                                            .addDeal(deal),
+                                      );
+                                    }
+
+                                    final product = entry.product!;
+                                    return ProductMenuCard(
+                                      product: product,
+                                      onAdd: () => ref
+                                          .read(cartProvider.notifier)
+                                          .addProduct(product),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+              const CartPanel(),
+            ],
+          );
+        },
+        loading: () => const Center(child: Text('Loading menu...')),
+        error: (error, _) => Center(
+          child: Text(
+            error.toString(),
+            style: const TextStyle(color: AppColors.danger),
+          ),
+        ),
+      ),
+    );
+  }
+}

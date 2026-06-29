@@ -4,6 +4,7 @@ import '../../core/navigation/nav_item.dart';
 import '../../features/categories/categories_screen.dart';
 import '../../features/deals/deal_form_screen.dart';
 import '../../features/deals/deals_screen.dart';
+import '../../features/menu/menu_screen.dart';
 import '../../features/products/products_screen.dart';
 import '../../shared/layouts/main_layout.dart';
 import '../../shared/widgets/feature_placeholder_screen.dart';
@@ -26,8 +27,7 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: NavItem.menu.route,
-          builder: (context, state) =>
-              const FeaturePlaceholderScreen(navItem: NavItem.menu),
+          builder: (context, state) => const MenuScreen(),
         ),
         GoRoute(
           path: NavItem.orders.route,

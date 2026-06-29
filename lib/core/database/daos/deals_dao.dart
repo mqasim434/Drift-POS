@@ -134,4 +134,22 @@ class DealsDao extends DatabaseAccessor<AppDatabase> with _$DealsDaoMixin {
     await (delete(dealItems)..where((d) => d.dealId.equals(id))).go();
     return (delete(deals)..where((d) => d.id.equals(id))).go();
   }
+
+  Future<List<DealWithItems>> getAllAvailableWithItems() async {
+    final availableDeals = await (select(deals)
+          ..where((d) => d.isAvailable.equals(true))
+          ..orderBy([
+            (d) => OrderingTerm.asc(d.name),
+          ]))
+        .get();
+
+    final results = <DealWithItems>[];
+    for (final deal in availableDeals) {
+      final withItems = await getDealWithItems(deal.id);
+      if (withItems != null && withItems.items.isNotEmpty) {
+        results.add(withItems);
+      }
+    }
+    return results;
+  }
 }
