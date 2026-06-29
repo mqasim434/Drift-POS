@@ -132,6 +132,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                               item.id,
                               item.isDeal,
                               item.quantity + 1,
+                              variantId: item.variantId,
                             ),
                         onDecrement: () => ref
                             .read(cartProvider.notifier)
@@ -139,6 +140,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                               item.id,
                               item.isDeal,
                               item.quantity - 1,
+                              variantId: item.variantId,
                             ),
                       );
                     },

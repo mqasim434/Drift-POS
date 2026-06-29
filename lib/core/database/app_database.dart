@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'daos/categories_dao.dart';
 import 'daos/deals_dao.dart';
 import 'daos/orders_dao.dart';
+import 'daos/product_variants_dao.dart';
 import 'daos/products_dao.dart';
 import 'daos/tables_dao.dart';
 import 'tables/categories.dart';
@@ -15,6 +16,7 @@ import 'tables/deal_items.dart';
 import 'tables/deals.dart';
 import 'tables/order_items.dart';
 import 'tables/orders.dart';
+import 'tables/product_variants.dart';
 import 'tables/products.dart';
 import 'tables/restaurant_tables.dart';
 
@@ -24,6 +26,7 @@ part 'app_database.g.dart';
   tables: [
     Categories,
     Products,
+    ProductVariants,
     Deals,
     DealItems,
     RestaurantTables,
@@ -33,6 +36,7 @@ part 'app_database.g.dart';
   daos: [
     CategoriesDao,
     ProductsDao,
+    ProductVariantsDao,
     DealsDao,
     OrdersDao,
     TablesDao,
@@ -44,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -60,10 +64,21 @@ class AppDatabase extends _$AppDatabase {
             'CREATE INDEX idx_products_category_id ON products(category_id);',
           );
           await customStatement(
+            'CREATE INDEX idx_product_variants_product_id ON product_variants(product_id);',
+          );
+          await customStatement(
             'CREATE INDEX idx_orders_order_type ON orders(order_type);',
           );
           await customStatement('PRAGMA journal_mode=WAL;');
           await customStatement('PRAGMA synchronous=NORMAL;');
+        },
+        onUpgrade: (m, from, to) async {
+          if (from < 2) {
+            await m.createTable(productVariants);
+            await customStatement(
+              'CREATE INDEX idx_product_variants_product_id ON product_variants(product_id);',
+            );
+          }
         },
       );
 }

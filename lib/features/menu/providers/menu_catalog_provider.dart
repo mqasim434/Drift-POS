@@ -15,6 +15,7 @@ final menuCatalogProvider =
 class MenuCatalogNotifier extends AsyncNotifier<MenuCatalog> {
   StreamSubscription<List<Product>>? _productsSub;
   StreamSubscription<List<Deal>>? _dealsSub;
+  StreamSubscription<List<ProductVariant>>? _variantsSub;
 
   @override
   Future<MenuCatalog> build() async {
@@ -22,6 +23,7 @@ class MenuCatalogNotifier extends AsyncNotifier<MenuCatalog> {
 
     _productsSub?.cancel();
     _dealsSub?.cancel();
+    _variantsSub?.cancel();
 
     _productsSub = db.productsDao.watchAllProducts().listen((_) async {
       state = AsyncData(await _loadCatalog(db));
@@ -29,10 +31,14 @@ class MenuCatalogNotifier extends AsyncNotifier<MenuCatalog> {
     _dealsSub = db.dealsDao.watchAllDeals().listen((_) async {
       state = AsyncData(await _loadCatalog(db));
     });
+    _variantsSub = db.productVariantsDao.watchAllVariants().listen((_) async {
+      state = AsyncData(await _loadCatalog(db));
+    });
 
     ref.onDispose(() {
       _productsSub?.cancel();
       _dealsSub?.cancel();
+      _variantsSub?.cancel();
     });
 
     return _loadCatalog(db);

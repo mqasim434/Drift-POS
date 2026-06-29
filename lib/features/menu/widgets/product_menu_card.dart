@@ -25,7 +25,16 @@ class ProductMenuCard extends StatelessWidget {
 
   String get _name => _isDeal ? deal!.name : product!.name;
 
-  int get _priceInPaisa => _isDeal ? deal!.priceInPaisa : product!.priceInPaisa;
+  int get _priceInPaisa =>
+      _isDeal ? deal!.priceInPaisa : product!.displayPriceInPaisa;
+
+  String get _priceLabel {
+    if (_isDeal) return CurrencyFormatter.format(_priceInPaisa);
+    if (product!.hasVariants) {
+      return 'From ${CurrencyFormatter.format(_priceInPaisa)}';
+    }
+    return CurrencyFormatter.format(_priceInPaisa);
+  }
 
   String? get _imagePath => _isDeal ? deal!.imagePath : product!.imagePath;
 
@@ -93,7 +102,7 @@ class ProductMenuCard extends StatelessWidget {
                     ),
                     const Spacer(),
                     Text(
-                      CurrencyFormatter.format(_priceInPaisa),
+                      _priceLabel,
                       style: AppTextStyles.price,
                     ),
                     const SizedBox(height: AppSizes.sm),

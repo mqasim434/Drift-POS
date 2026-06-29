@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
+import '../../core/models/menu_catalog.dart';
 import '../../shared/layouts/feature_scaffold.dart';
 import '../../shared/widgets/debounced_search_field.dart';
 import '../../shared/widgets/empty_state.dart';
@@ -11,9 +12,25 @@ import 'providers/menu_catalog_provider.dart';
 import 'widgets/cart_panel.dart';
 import 'widgets/category_tabs.dart';
 import 'widgets/product_menu_card.dart';
+import 'widgets/product_variant_picker_dialog.dart';
 
 class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
+
+  Future<void> _addProductToCart(
+    BuildContext context,
+    WidgetRef ref,
+    MenuProduct product,
+  ) async {
+    if (product.hasVariants) {
+      final variant = await showProductVariantPicker(context, product);
+      if (variant == null) return;
+      ref.read(cartProvider.notifier).addProduct(product, variant: variant);
+      return;
+    }
+
+    ref.read(cartProvider.notifier).addProduct(product);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,9 +111,11 @@ class MenuScreen extends ConsumerWidget {
                                     final product = entry.product!;
                                     return ProductMenuCard(
                                       product: product,
-                                      onAdd: () => ref
-                                          .read(cartProvider.notifier)
-                                          .addProduct(product),
+                                      onAdd: () => _addProductToCart(
+                                        context,
+                                        ref,
+                                        product,
+                                      ),
                                     );
                                   },
                                 );

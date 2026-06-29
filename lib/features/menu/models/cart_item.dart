@@ -7,6 +7,7 @@ class CartItem extends Equatable {
     required this.unitPriceInPaisa,
     required this.quantity,
     required this.isDeal,
+    this.variantId,
     this.dealItemNames,
   });
 
@@ -15,6 +16,7 @@ class CartItem extends Equatable {
   final int unitPriceInPaisa;
   final int quantity;
   final bool isDeal;
+  final int? variantId;
   final List<String>? dealItemNames;
 
   int get lineTotalInPaisa => unitPriceInPaisa * quantity;
@@ -26,10 +28,12 @@ class CartItem extends Equatable {
       unitPriceInPaisa: unitPriceInPaisa,
       quantity: quantity ?? this.quantity,
       isDeal: isDeal,
+      variantId: variantId,
       dealItemNames: dealItemNames,
     );
   }
 
   @override
-  List<Object?> get props => [id, isDeal, name, unitPriceInPaisa, quantity];
+  List<Object?> get props =>
+      [id, isDeal, variantId, name, unitPriceInPaisa, quantity];
 }

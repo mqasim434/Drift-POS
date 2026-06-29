@@ -10,7 +10,9 @@ import '../../../core/services/image_storage_service.dart';
 import '../../../shared/widgets/currency_input_field.dart';
 import '../../../shared/widgets/product_image_widget.dart';
 import '../../categories/providers/categories_provider.dart';
+import '../../../core/models/product_variant_input.dart';
 import '../providers/products_provider.dart';
+import 'product_variants_editor.dart';
 
 class ProductFormSheet extends ConsumerStatefulWidget {
   const ProductFormSheet({
@@ -37,6 +39,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
   String? _imagePath;
   bool _isAvailable = true;
   bool _isSaving = false;
+  List<ProductVariantInput> _variants = [];
 
   bool get _isEditing => widget.product != null;
 
@@ -52,6 +55,27 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
     _categoryId = product?.categoryId;
     _imagePath = product?.imagePath;
     _isAvailable = product?.isAvailable ?? true;
+
+    if (_isEditing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _loadVariants());
+    }
+  }
+
+  Future<void> _loadVariants() async {
+    final variants = await ref
+        .read(productVariantsProvider(widget.product!.id).future);
+    if (!mounted) return;
+    setState(() {
+      _variants = [
+        for (final variant in variants)
+          ProductVariantInput(
+            id: variant.id,
+            name: variant.name,
+            priceInPaisa: variant.priceInPaisa,
+            sortOrder: variant.sortOrder,
+          ),
+      ];
+    });
   }
 
   @override
@@ -90,6 +114,19 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
       return;
     }
 
+    for (final variant in _variants) {
+      final hasName = variant.name.trim().isNotEmpty;
+      final hasPrice = variant.priceInPaisa > 0;
+      if (hasName != hasPrice) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Each variant needs both a name and a price'),
+          ),
+        );
+        return;
+      }
+    }
+
     setState(() => _isSaving = true);
 
     try {
@@ -110,6 +147,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
             sortOrder: sortOrder,
             updatedAt: DateTime.now(),
           ),
+          variants: _variants,
         );
       } else {
         await notifier.addProduct(
@@ -126,6 +164,7 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
             isAvailable: Value(_isAvailable),
             sortOrder: Value(sortOrder),
           ),
+          variants: _variants,
         );
       }
 
@@ -239,6 +278,12 @@ class _ProductFormSheetState extends ConsumerState<ProductFormSheet> {
                       CurrencyInputField(
                         key: _priceFieldKey,
                         initialPaisa: widget.product?.priceInPaisa ?? 0,
+                      ),
+                      const SizedBox(height: AppSizes.md),
+                      ProductVariantsEditor(
+                        variants: _variants,
+                        onChanged: (variants) =>
+                            setState(() => _variants = variants),
                       ),
                       const SizedBox(height: AppSizes.md),
                       TextFormField(

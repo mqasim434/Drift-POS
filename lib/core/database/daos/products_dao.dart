@@ -127,18 +127,32 @@ class ProductsDao extends DatabaseAccessor<AppDatabase>
           ]))
         .get();
 
-    return rows
-        .map(
-          (row) => MenuProduct(
-            id: row.readTable(products).id,
-            name: row.readTable(products).name,
-            priceInPaisa: row.readTable(products).priceInPaisa,
-            categoryId: row.readTable(products).categoryId,
-            categoryName: row.readTable(categories).name,
-            categoryColor: row.readTable(categories).color,
-            imagePath: row.readTable(products).imagePath,
-          ),
-        )
-        .toList();
+    final variantsByProduct =
+        await attachedDatabase.productVariantsDao.getAllVariantsGrouped();
+
+    return rows.map((row) {
+      final product = row.readTable(products);
+      final availableVariants = (variantsByProduct[product.id] ?? [])
+          .where((variant) => variant.isAvailable)
+          .map(
+            (variant) => MenuProductVariant(
+              id: variant.id,
+              name: variant.name,
+              priceInPaisa: variant.priceInPaisa,
+            ),
+          )
+          .toList();
+
+      return MenuProduct(
+        id: product.id,
+        name: product.name,
+        priceInPaisa: product.priceInPaisa,
+        categoryId: product.categoryId,
+        categoryName: row.readTable(categories).name,
+        categoryColor: row.readTable(categories).color,
+        imagePath: product.imagePath,
+        variants: availableVariants,
+      );
+    }).toList();
   }
 }

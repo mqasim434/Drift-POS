@@ -25,14 +25,20 @@ class CartNotifier extends Notifier<CartState> {
   @override
   CartState build() => const CartState();
 
-  void addProduct(MenuProduct product) {
+  void addProduct(MenuProduct product, {MenuProductVariant? variant}) {
+    final priceInPaisa = variant?.priceInPaisa ?? product.priceInPaisa;
+    final name = variant != null
+        ? '${product.name} (${variant.name})'
+        : product.name;
+
     addItem(
       CartItem(
         id: product.id,
-        name: product.name,
-        unitPriceInPaisa: product.priceInPaisa,
+        name: name,
+        unitPriceInPaisa: priceInPaisa,
         quantity: 1,
         isDeal: false,
+        variantId: variant?.id,
       ),
     );
   }
@@ -58,7 +64,7 @@ class CartNotifier extends Notifier<CartState> {
   void addItem(CartItem item) {
     final items = [...state.items];
     final index = items.indexWhere(
-      (existing) => existing.id == item.id && existing.isDeal == item.isDeal,
+      (existing) => _matchesLine(existing, item.id, item.isDeal, item.variantId),
     );
 
     if (index >= 0) {
@@ -72,30 +78,40 @@ class CartNotifier extends Notifier<CartState> {
     state = state.copyWith(items: items);
   }
 
-  void removeItem(int id, bool isDeal) {
+  void removeItem(int id, bool isDeal, {int? variantId}) {
     state = state.copyWith(
       items: state.items
-          .where((item) => !(item.id == id && item.isDeal == isDeal))
+          .where(
+            (item) => !_matchesLine(item, id, isDeal, variantId),
+          )
           .toList(),
     );
   }
 
-  void updateQuantity(int id, bool isDeal, int quantity) {
+  void updateQuantity(
+    int id,
+    bool isDeal,
+    int quantity, {
+    int? variantId,
+  }) {
     if (quantity <= 0) {
-      removeItem(id, isDeal);
+      removeItem(id, isDeal, variantId: variantId);
       return;
     }
 
     state = state.copyWith(
       items: [
         for (final item in state.items)
-          if (item.id == id && item.isDeal == isDeal)
+          if (_matchesLine(item, id, isDeal, variantId))
             item.copyWith(quantity: quantity)
           else
             item,
       ],
     );
   }
+
+  bool _matchesLine(CartItem item, int id, bool isDeal, int? variantId) =>
+      item.id == id && item.isDeal == isDeal && item.variantId == variantId;
 
   void clearCart() => state = const CartState();
 

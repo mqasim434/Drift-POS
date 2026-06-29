@@ -1,5 +1,17 @@
 import 'deal_with_items.dart';
 
+class MenuProductVariant {
+  const MenuProductVariant({
+    required this.id,
+    required this.name,
+    required this.priceInPaisa,
+  });
+
+  final int id;
+  final String name;
+  final int priceInPaisa;
+}
+
 class MenuProduct {
   const MenuProduct({
     required this.id,
@@ -9,6 +21,7 @@ class MenuProduct {
     required this.categoryName,
     required this.categoryColor,
     this.imagePath,
+    this.variants = const [],
   });
 
   final int id;
@@ -18,6 +31,16 @@ class MenuProduct {
   final String categoryName;
   final String categoryColor;
   final String? imagePath;
+  final List<MenuProductVariant> variants;
+
+  bool get hasVariants => variants.isNotEmpty;
+
+  int get displayPriceInPaisa {
+    if (variants.isEmpty) return priceInPaisa;
+    return variants.map((v) => v.priceInPaisa).reduce(
+          (min, price) => price < min ? price : min,
+        );
+  }
 }
 
 class MenuCatalog {
