@@ -91,7 +91,7 @@ class OrdersTableView extends ConsumerWidget {
                         _OrdersFlexCell(
                           flex: _OrdersTableLayout.timeFlex,
                           child: Text(
-                            DateFormatter.formatTime24(order.createdAt),
+                            DateFormatter.formatTime(order.createdAt),
                             style: AppTextStyles.bodySmall.copyWith(
                               color: isCancelled
                                   ? AppColors.textMuted

@@ -14,7 +14,7 @@ import '../../../core/providers/shop_settings_provider.dart';
 import '../../../core/services/receipt_service.dart';
 import '../../orders/providers/orders_provider.dart';
 import '../providers/cart_provider.dart';
-import '../providers/menu_catalog_provider.dart';
+import '../../tables/providers/tables_provider.dart';
 
 class CartPanel extends ConsumerStatefulWidget {
   const CartPanel({super.key});
@@ -99,7 +99,23 @@ class _CartPanelState extends ConsumerState<CartPanel> {
   Widget build(BuildContext context) {
     final cart = ref.watch(cartProvider);
     final totals = ref.watch(cartTotalsProvider);
-    final tablesAsync = ref.watch(activeTablesProvider);
+    final tablesAsync = ref.watch(tablesWithStatusProvider);
+
+    ref.listen(tablesWithStatusProvider, (previous, next) {
+      next.whenData((views) {
+        final selectedId = ref.read(cartProvider).selectedTableId;
+        if (selectedId == null) return;
+        final stillAvailable = views.any(
+          (view) =>
+              view.table.id == selectedId &&
+              view.table.isActive &&
+              !view.isOccupied,
+        );
+        if (!stillAvailable) {
+          ref.read(cartProvider.notifier).setTable(null);
+        }
+      });
+    });
     final taxPercent = totals.taxRatePercent.toStringAsFixed(
       totals.taxRatePercent.truncateToDouble() == totals.taxRatePercent ? 0 : 1,
     );
@@ -190,9 +206,24 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                 const SizedBox(height: AppSizes.md),
                 if (cart.orderType == OrderType.dineIn)
                   tablesAsync.when(
-                    data: (tables) {
+                    data: (tableViews) {
+                      final availableTables = tableViews
+                          .where(
+                            (view) =>
+                                view.table.isActive && !view.isOccupied,
+                          )
+                          .map((view) => view.table)
+                          .toList();
+                      final availableIds =
+                          availableTables.map((table) => table.id).toSet();
+                      final selectedTableId =
+                          cart.selectedTableId != null &&
+                                  availableIds.contains(cart.selectedTableId)
+                              ? cart.selectedTableId
+                              : null;
+
                       return DropdownButtonFormField<int?>(
-                        value: cart.selectedTableId,
+                        value: selectedTableId,
                         decoration: const InputDecoration(
                           labelText: 'Table',
                           isDense: true,
@@ -202,7 +233,7 @@ class _CartPanelState extends ConsumerState<CartPanel> {
                             value: null,
                             child: Text('No table selected'),
                           ),
-                          for (final table in tables)
+                          for (final table in availableTables)
                             DropdownMenuItem<int?>(
                               value: table.id,
                               child: Text(table.name),
