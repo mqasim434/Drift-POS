@@ -9,11 +9,13 @@ class SettingsSection extends StatelessWidget {
     required this.title,
     required this.child,
     this.subtitle,
+    this.onTitleLongPress,
   });
 
   final String title;
   final String? subtitle;
   final Widget child;
+  final VoidCallback? onTitleLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +26,11 @@ class SettingsSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title, style: AppTextStyles.subtitle),
+            GestureDetector(
+              onLongPress: onTitleLongPress,
+              behavior: HitTestBehavior.opaque,
+              child: Text(title, style: AppTextStyles.subtitle),
+            ),
             if (subtitle != null) ...[
               const SizedBox(height: AppSizes.xs),
               Text(subtitle!, style: AppTextStyles.caption),
