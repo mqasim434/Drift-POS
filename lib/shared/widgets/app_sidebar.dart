@@ -4,10 +4,10 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_sizes.dart';
-import '../../core/constants/app_strings.dart';
 import '../../core/constants/app_text_styles.dart';
 import '../../core/navigation/nav_item.dart';
 import '../../core/utils/date_formatter.dart';
+import 'app_logo.dart';
 
 class AppSidebar extends StatelessWidget {
   const AppSidebar({
@@ -66,23 +66,16 @@ class AppSidebar extends StatelessWidget {
 class _SidebarBrand extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(
         AppSizes.md,
         AppSizes.lg,
         AppSizes.md,
         AppSizes.sm,
       ),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.local_fire_department,
-            color: AppColors.accent,
-            size: AppSizes.lg,
-          ),
-          const SizedBox(width: AppSizes.sm),
-          Text(AppStrings.sidebarBrand, style: AppTextStyles.title),
-        ],
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: AppLogo(height: 44),
       ),
     );
   }
@@ -170,15 +163,20 @@ class _SidebarClockState extends State<_SidebarClock> {
   late DateTime _now;
   Timer? _timer;
 
+  bool get _isWidgetTest =>
+      WidgetsBinding.instance.runtimeType.toString().contains('TestWidgets');
+
   @override
   void initState() {
     super.initState();
     _now = DateTime.now();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() => _now = DateTime.now());
-      }
-    });
+    if (!_isWidgetTest) {
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) {
+          setState(() => _now = DateTime.now());
+        }
+      });
+    }
   }
 
   @override

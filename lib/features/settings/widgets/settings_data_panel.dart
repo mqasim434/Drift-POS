@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_info.dart';
 import '../../../core/constants/app_sizes.dart';
+import '../../../shared/widgets/app_logo.dart';
 import '../../../core/models/orders_date_range.dart';
 import '../../../core/services/database_info_service.dart';
 import '../../../core/services/orders_csv_export_service.dart';
@@ -149,6 +150,8 @@ class _SettingsDataPanelState extends ConsumerState<SettingsDataPanel> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const AppLogo(height: 56),
+              const SizedBox(height: AppSizes.md),
               Text('${AppInfo.name} v${AppInfo.version}'),
               const SizedBox(height: AppSizes.xs),
               Text('Database size: $dbSizeLabel'),

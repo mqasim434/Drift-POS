@@ -36,6 +36,22 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     _customerContactController = TextEditingController();
     _deliveryAddressController = TextEditingController();
     _notesController = TextEditingController();
+
+    ref.listenManual(tablesWithStatusProvider, (previous, next) {
+      next.whenData((views) {
+        final selectedId = ref.read(cartProvider).selectedTableId;
+        if (selectedId == null) return;
+        final stillAvailable = views.any(
+          (view) =>
+              view.table.id == selectedId &&
+              view.table.isActive &&
+              !view.isOccupied,
+        );
+        if (!stillAvailable) {
+          ref.read(cartProvider.notifier).setTable(null);
+        }
+      });
+    });
   }
 
   @override
@@ -101,21 +117,6 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     final totals = ref.watch(cartTotalsProvider);
     final tablesAsync = ref.watch(tablesWithStatusProvider);
 
-    ref.listen(tablesWithStatusProvider, (previous, next) {
-      next.whenData((views) {
-        final selectedId = ref.read(cartProvider).selectedTableId;
-        if (selectedId == null) return;
-        final stillAvailable = views.any(
-          (view) =>
-              view.table.id == selectedId &&
-              view.table.isActive &&
-              !view.isOccupied,
-        );
-        if (!stillAvailable) {
-          ref.read(cartProvider.notifier).setTable(null);
-        }
-      });
-    });
     final taxPercent = totals.taxRatePercent.toStringAsFixed(
       totals.taxRatePercent.truncateToDouble() == totals.taxRatePercent ? 0 : 1,
     );
