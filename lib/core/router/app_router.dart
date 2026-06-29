@@ -5,6 +5,7 @@ import '../../features/categories/categories_screen.dart';
 import '../../features/deals/deal_form_screen.dart';
 import '../../features/deals/deals_screen.dart';
 import '../../features/menu/menu_screen.dart';
+import '../../features/tables/tables_screen.dart';
 import '../../features/products/products_screen.dart';
 import '../../shared/layouts/main_layout.dart';
 import '../../shared/widgets/feature_placeholder_screen.dart';
@@ -60,8 +61,7 @@ final appRouter = GoRouter(
         ),
         GoRoute(
           path: NavItem.tables.route,
-          builder: (context, state) =>
-              const FeaturePlaceholderScreen(navItem: NavItem.tables),
+          builder: (context, state) => const TablesScreen(),
         ),
         GoRoute(
           path: NavItem.analytics.route,

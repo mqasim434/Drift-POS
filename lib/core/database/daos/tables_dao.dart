@@ -45,4 +45,17 @@ class TablesDao extends DatabaseAccessor<AppDatabase> with _$TablesDaoMixin {
     );
     return occupiedOrders.isNotEmpty;
   }
+
+  Future<bool> nameExists(String name, {int? excludeId}) async {
+    final trimmed = name.trim();
+    final results = await (select(restaurantTables)
+          ..where((t) => t.name.equals(trimmed)))
+        .get();
+    if (excludeId == null) return results.isNotEmpty;
+    return results.any((table) => table.id != excludeId);
+  }
+
+  Future<int> deleteTable(int id) {
+    return (delete(restaurantTables)..where((t) => t.id.equals(id))).go();
+  }
 }

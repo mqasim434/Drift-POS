@@ -63,6 +63,24 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         .get();
   }
 
+  Future<Set<int>> getOccupiedTableIdsForToday() async {
+    final today = DateTime.now();
+    final from = DateTime(today.year, today.month, today.day);
+    final to = from.add(const Duration(days: 1));
+
+    final rows = await (select(orders)
+          ..where(
+            (o) =>
+                o.tableId.isNotNull() &
+                o.createdAt.isBiggerOrEqualValue(from) &
+                o.createdAt.isSmallerThanValue(to) &
+                o.status.equals('cancelled').not(),
+          ))
+        .get();
+
+    return rows.map((order) => order.tableId!).toSet();
+  }
+
   Future<DashboardStats> getTodayStats(DateTime today) async {
     final from = DateTime(today.year, today.month, today.day);
     final to = from.add(const Duration(days: 1));
