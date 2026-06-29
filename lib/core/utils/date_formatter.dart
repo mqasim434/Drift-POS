@@ -8,6 +8,10 @@ class DateFormatter {
   static final DateFormat _time = DateFormat('hh:mm a');
   static final DateFormat _dateTime = DateFormat('dd MMM yyyy, hh:mm a');
 
+  static final DateFormat _time24 = DateFormat('HH:mm');
+
+  static String formatTime24(DateTime date) => _time24.format(date);
+
   static String formatDate(DateTime date) => _date.format(date);
 
   static String formatTime(DateTime date) => _time.format(date);

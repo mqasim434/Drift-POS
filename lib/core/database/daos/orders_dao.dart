@@ -35,6 +35,32 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
     return (select(orderItems)..where((i) => i.orderId.equals(orderId))).get();
   }
 
+  Future<Order?> getOrderById(int id) {
+    return (select(orders)..where((o) => o.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<Map<int, int>> getItemCountsForOrders(List<int> orderIds) async {
+    if (orderIds.isEmpty) return {};
+
+    final quantityExp = orderItems.quantity.sum();
+    final rows = await (selectOnly(orderItems)
+          ..addColumns([orderItems.orderId, quantityExp])
+          ..where(orderItems.orderId.isIn(orderIds))
+          ..groupBy([orderItems.orderId]))
+        .get();
+
+    return {
+      for (final row in rows)
+        row.read(orderItems.orderId)!: row.read(quantityExp) ?? 0,
+    };
+  }
+
+  Future<int> cancelOrder(int id) {
+    return (update(orders)..where((o) => o.id.equals(id))).write(
+      const OrdersCompanion(status: Value('cancelled')),
+    );
+  }
+
   Future<int> countOrdersInRange(DateTime from, DateTime to) async {
     final countExp = orders.id.count();
     final query = selectOnly(orders)

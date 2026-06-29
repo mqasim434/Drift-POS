@@ -7,4 +7,11 @@ enum OrderType {
 
   final String dbValue;
   final String label;
+
+  static OrderType? fromDbValue(String value) {
+    for (final type in OrderType.values) {
+      if (type.dbValue == value) return type;
+    }
+    return null;
+  }
 }
