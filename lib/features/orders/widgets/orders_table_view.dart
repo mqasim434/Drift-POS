@@ -9,12 +9,14 @@ import '../../../core/models/order_models.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import 'order_detail_dialog.dart';
+import 'order_status_badge.dart';
 import 'order_type_badge.dart';
 
 abstract final class _OrdersTableLayout {
   static const orderFlex = 4;
   static const timeFlex = 2;
   static const typeFlex = 2;
+  static const statusFlex = 2;
   static const itemsFlex = 1;
   static const totalFlex = 2;
   static const actionsWidth = 196.0;
@@ -99,10 +101,12 @@ class OrdersTableView extends ConsumerWidget {
                         ),
                         _OrdersFlexCell(
                           flex: _OrdersTableLayout.typeFlex,
-                          child: OrderTypeBadge(
-                            orderType: order.orderType,
-                            isCancelled: isCancelled,
-                            isCompleted: isCompleted,
+                          child: OrderTypeBadge(orderType: order.orderType),
+                        ),
+                        _OrdersFlexCell(
+                          flex: _OrdersTableLayout.statusFlex,
+                          child: OrderStatusBadge(
+                            orderStatus: order.orderStatus,
                           ),
                         ),
                         _OrdersFlexCell(
@@ -273,6 +277,10 @@ class _OrdersTableHeader extends StatelessWidget {
           _OrdersFlexCell(
             flex: _OrdersTableLayout.typeFlex,
             child: Text('Type', style: AppTextStyles.label),
+          ),
+          _OrdersFlexCell(
+            flex: _OrdersTableLayout.statusFlex,
+            child: Text('Status', style: AppTextStyles.label),
           ),
           _OrdersFlexCell(
             flex: _OrdersTableLayout.itemsFlex,

@@ -77,8 +77,8 @@ class DealCard extends ConsumerWidget {
                         Chip(
                           label: Text(
                             item.quantity > 1
-                                ? '${item.product.name} x${item.quantity}'
-                                : item.product.name,
+                                ? '${item.displayName} x${item.quantity}'
+                                : item.displayName,
                             style: AppTextStyles.caption,
                           ),
                           visualDensity: VisualDensity.compact,

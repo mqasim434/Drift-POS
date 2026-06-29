@@ -11,18 +11,40 @@ class CategoryTabs extends ConsumerWidget {
   const CategoryTabs({
     super.key,
     required this.productCounts,
+    required this.dealCount,
   });
 
   final Map<int, int> productCounts;
+  final int dealCount;
+
+  int _tabCount({
+    required int categoryId,
+    required int? dealsCategoryId,
+  }) {
+    final productCount = productCounts[categoryId] ?? 0;
+    if (dealsCategoryId != null &&
+        categoryId == dealsCategoryId &&
+        dealCount > 0) {
+      return productCount + dealCount;
+    }
+    return productCount;
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoriesProvider);
     final selectedCategoryId = ref.watch(menuCategoryFilterProvider);
-    final totalCount = productCounts.values.fold(0, (sum, count) => sum + count);
+    final productTotal =
+        productCounts.values.fold(0, (sum, count) => sum + count);
+    final allCount = productTotal + dealCount;
 
     return categoriesAsync.when(
       data: (categories) {
+        final activeCategories =
+            categories.where((category) => category.isActive).toList();
+        final dealsCategoryId = findDealsCategoryId(activeCategories);
+        final showSyntheticDealsTab = dealCount > 0 && dealsCategoryId == null;
+
         return SizedBox(
           height: AppSizes.controlHeightLg,
           child: ListView(
@@ -31,15 +53,27 @@ class CategoryTabs extends ConsumerWidget {
             children: [
               _CategoryTab(
                 label: 'All',
-                count: totalCount,
+                count: allCount,
                 isActive: selectedCategoryId == null,
                 onTap: () =>
                     ref.read(menuCategoryFilterProvider.notifier).state = null,
               ),
-              for (final category in categories.where((c) => c.isActive))
+              if (showSyntheticDealsTab)
+                _CategoryTab(
+                  label: 'Deals',
+                  count: dealCount,
+                  isActive: selectedCategoryId == menuDealsCategoryFilter,
+                  onTap: () => ref
+                      .read(menuCategoryFilterProvider.notifier)
+                      .state = menuDealsCategoryFilter,
+                ),
+              for (final category in activeCategories)
                 _CategoryTab(
                   label: category.name,
-                  count: productCounts[category.id] ?? 0,
+                  count: _tabCount(
+                    categoryId: category.id,
+                    dealsCategoryId: dealsCategoryId,
+                  ),
                   isActive: selectedCategoryId == category.id,
                   onTap: () => ref
                       .read(menuCategoryFilterProvider.notifier)

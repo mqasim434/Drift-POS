@@ -4,11 +4,12 @@ import '../../models/deal_with_items.dart';
 import '../app_database.dart';
 import '../tables/deal_items.dart';
 import '../tables/deals.dart';
+import '../tables/product_variants.dart';
 import '../tables/products.dart';
 
 part 'deals_dao.g.dart';
 
-@DriftAccessor(tables: [Deals, DealItems, Products])
+@DriftAccessor(tables: [Deals, DealItems, Products, ProductVariants])
 class DealsDao extends DatabaseAccessor<AppDatabase> with _$DealsDaoMixin {
   DealsDao(super.db);
 
@@ -28,6 +29,10 @@ class DealsDao extends DatabaseAccessor<AppDatabase> with _$DealsDaoMixin {
 
     final rows = await (select(dealItems).join([
       innerJoin(products, products.id.equalsExp(dealItems.productId)),
+      leftOuterJoin(
+        productVariants,
+        productVariants.id.equalsExp(dealItems.variantId),
+      ),
     ])
           ..where(dealItems.dealId.equals(dealId)))
         .get();
@@ -37,6 +42,7 @@ class DealsDao extends DatabaseAccessor<AppDatabase> with _$DealsDaoMixin {
           (row) => DealItemDetail(
             quantity: row.readTable(dealItems).quantity,
             product: row.readTable(products),
+            variant: row.readTableOrNull(productVariants),
           ),
         )
         .toList();
@@ -88,7 +94,7 @@ class DealsDao extends DatabaseAccessor<AppDatabase> with _$DealsDaoMixin {
     required int priceInPaisa,
     String? imagePath,
     required bool isAvailable,
-    required List<({int productId, int quantity})> items,
+    required List<({int productId, int quantity, int? variantId})> items,
   }) async {
     await transaction(() async {
       late int savedDealId;
@@ -123,6 +129,7 @@ class DealsDao extends DatabaseAccessor<AppDatabase> with _$DealsDaoMixin {
           DealItemsCompanion.insert(
             dealId: savedDealId,
             productId: item.productId,
+            variantId: Value(item.variantId),
             quantity: Value(item.quantity),
           ),
         );

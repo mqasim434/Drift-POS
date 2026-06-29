@@ -28,15 +28,15 @@ class ShopSettings {
   final String? defaultPrinterUrl;
 
   static const defaults = ShopSettings(
-    shopName: 'DriftPOS',
-    address: '',
-    phone: '',
+    shopName: 'City Pizza',
+    address: 'Khan Center Boken Morr, Near Mian G Electronics',
+    phone: '0317-1876915, 0300-0619758',
     currencySymbol: 'PKR',
     taxRatePercent: 0,
     taxLabel: 'Tax',
     includeTaxInPriceDisplay: false,
     autoPrintAfterOrder: false,
-    thankYouMessage: 'Thank you! Visit again',
+    thankYouMessage: 'Thank you for dining with us!',
     showOrderTypeOnReceipt: true,
     showTableOnReceipt: true,
     defaultPrinterUrl: null,

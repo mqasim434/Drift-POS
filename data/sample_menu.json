@@ -1,0 +1,259 @@
+{
+  "version": 1,
+  "shop": {
+    "name": "City Pizza"
+  },
+  "categories": [
+    {
+      "slug": "pizzas",
+      "name": "Pizzas",
+      "color": "#E63946",
+      "icon": "pizza",
+      "sortOrder": 1,
+      "isActive": true
+    },
+    {
+      "slug": "burgers",
+      "name": "Burgers",
+      "color": "#FF6B35",
+      "icon": "burger",
+      "sortOrder": 2,
+      "isActive": true
+    },
+    {
+      "slug": "pasta",
+      "name": "Pasta",
+      "color": "#F4A261",
+      "icon": "utensils",
+      "sortOrder": 3,
+      "isActive": true
+    },
+    {
+      "slug": "fries",
+      "name": "Fries & Sides",
+      "color": "#F59E0B",
+      "icon": "french_fries",
+      "sortOrder": 4,
+      "isActive": true
+    },
+    {
+      "slug": "drinks",
+      "name": "Drinks",
+      "color": "#3B82F6",
+      "icon": "cup",
+      "sortOrder": 5,
+      "isActive": true
+    },
+    {
+      "slug": "desserts",
+      "name": "Desserts",
+      "color": "#EC4899",
+      "icon": "ice_cream",
+      "sortOrder": 6,
+      "isActive": true
+    }
+  ],
+  "products": [
+    {
+      "slug": "chicken-fajita",
+      "name": "Chicken Fajita Pizza",
+      "category": "pizzas",
+      "description": "Chicken, capsicum, onion, fajita sauce",
+      "price": 850,
+      "sortOrder": 1,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Small", "price": 850, "sortOrder": 1 },
+        { "name": "Medium", "price": 1200, "sortOrder": 2 },
+        { "name": "Large", "price": 1550, "sortOrder": 3 },
+        { "name": "Family", "price": 2100, "sortOrder": 4 }
+      ]
+    },
+    {
+      "slug": "chicken-supreme",
+      "name": "Chicken Supreme Pizza",
+      "category": "pizzas",
+      "description": "Chicken, mushrooms, olives, capsicum",
+      "price": 900,
+      "sortOrder": 2,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Small", "price": 900, "sortOrder": 1 },
+        { "name": "Medium", "price": 1250, "sortOrder": 2 },
+        { "name": "Large", "price": 1600, "sortOrder": 3 },
+        { "name": "Family", "price": 2200, "sortOrder": 4 }
+      ]
+    },
+    {
+      "slug": "cheese-lover",
+      "name": "Cheese Lover Pizza",
+      "category": "pizzas",
+      "description": "Extra mozzarella and cheddar",
+      "price": 800,
+      "sortOrder": 3,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Small", "price": 800, "sortOrder": 1 },
+        { "name": "Medium", "price": 1150, "sortOrder": 2 },
+        { "name": "Large", "price": 1500, "sortOrder": 3 }
+      ]
+    },
+    {
+      "slug": "beef-burger",
+      "name": "Beef Burger",
+      "category": "burgers",
+      "description": "Beef patty, lettuce, cheese, special sauce",
+      "price": 450,
+      "sortOrder": 1,
+      "isAvailable": true
+    },
+    {
+      "slug": "chicken-burger",
+      "name": "Chicken Burger",
+      "category": "burgers",
+      "description": "Crispy chicken fillet with mayo",
+      "price": 400,
+      "sortOrder": 2,
+      "isAvailable": true
+    },
+    {
+      "slug": "zinger-burger",
+      "name": "Zinger Burger",
+      "category": "burgers",
+      "description": "Spicy zinger fillet",
+      "price": 480,
+      "sortOrder": 3,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Regular", "price": 480, "sortOrder": 1 },
+        { "name": "Double", "price": 650, "sortOrder": 2 }
+      ]
+    },
+    {
+      "slug": "chicken-alfredo",
+      "name": "Chicken Alfredo Pasta",
+      "category": "pasta",
+      "description": "Creamy white sauce with grilled chicken",
+      "price": 550,
+      "sortOrder": 1,
+      "isAvailable": true
+    },
+    {
+      "slug": "macaroni-cheese",
+      "name": "Macaroni & Cheese",
+      "category": "pasta",
+      "price": 420,
+      "sortOrder": 2,
+      "isAvailable": true
+    },
+    {
+      "slug": "french-fries",
+      "name": "French Fries",
+      "category": "fries",
+      "price": 200,
+      "sortOrder": 1,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Regular", "price": 200, "sortOrder": 1 },
+        { "name": "Large", "price": 320, "sortOrder": 2 }
+      ]
+    },
+    {
+      "slug": "garlic-bread",
+      "name": "Garlic Bread",
+      "category": "fries",
+      "price": 250,
+      "sortOrder": 2,
+      "isAvailable": true
+    },
+    {
+      "slug": "coke",
+      "name": "Coca Cola",
+      "category": "drinks",
+      "price": 120,
+      "sortOrder": 1,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Regular", "price": 120, "sortOrder": 1 },
+        { "name": "1.5 Litre", "price": 220, "sortOrder": 2 }
+      ]
+    },
+    {
+      "slug": "sprite",
+      "name": "Sprite",
+      "category": "drinks",
+      "price": 120,
+      "sortOrder": 2,
+      "isAvailable": true
+    },
+    {
+      "slug": "mineral-water",
+      "name": "Mineral Water",
+      "category": "drinks",
+      "price": 80,
+      "sortOrder": 3,
+      "isAvailable": true
+    },
+    {
+      "slug": "chocolate-brownie",
+      "name": "Chocolate Brownie",
+      "category": "desserts",
+      "price": 300,
+      "sortOrder": 1,
+      "isAvailable": true
+    },
+    {
+      "slug": "ice-cream-cup",
+      "name": "Ice Cream Cup",
+      "category": "desserts",
+      "price": 250,
+      "sortOrder": 2,
+      "isAvailable": true,
+      "variants": [
+        { "name": "Vanilla", "price": 250, "sortOrder": 1 },
+        { "name": "Chocolate", "price": 250, "sortOrder": 2 },
+        { "name": "Strawberry", "price": 250, "sortOrder": 3 }
+      ]
+    }
+  ],
+  "deals": [
+    {
+      "slug": "family-deal-1",
+      "name": "Family Deal 1",
+      "description": "1 Large Chicken Fajita + 1 Large Fries + 1.5L Drink",
+      "price": 1999,
+      "sortOrder": 1,
+      "isAvailable": true,
+      "items": [
+        { "product": "chicken-fajita", "variant": "Large", "quantity": 1 },
+        { "product": "french-fries", "variant": "Large", "quantity": 1 },
+        { "product": "coke", "variant": "1.5 Litre", "quantity": 1 }
+      ]
+    },
+    {
+      "slug": "burger-meal",
+      "name": "Burger Meal",
+      "description": "1 Zinger Burger + Regular Fries + Regular Drink",
+      "price": 750,
+      "sortOrder": 2,
+      "isAvailable": true,
+      "items": [
+        { "product": "zinger-burger", "variant": "Regular", "quantity": 1 },
+        { "product": "french-fries", "variant": "Regular", "quantity": 1 },
+        { "product": "sprite", "quantity": 1 }
+      ]
+    },
+    {
+      "slug": "pizza-duo",
+      "name": "Pizza Duo",
+      "description": "2 Medium pizzas of your choice",
+      "price": 2200,
+      "sortOrder": 3,
+      "isAvailable": true,
+      "items": [
+        { "product": "chicken-fajita", "variant": "Medium", "quantity": 1 },
+        { "product": "cheese-lover", "variant": "Medium", "quantity": 1 }
+      ]
+    }
+  ]
+}

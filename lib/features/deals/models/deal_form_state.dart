@@ -4,29 +4,60 @@ import '../../../core/database/app_database.dart';
 
 class DealItemDraft extends Equatable {
   const DealItemDraft({
+    required this.key,
     required this.product,
+    this.variants = const [],
+    this.variantId,
     this.quantity = 1,
-    this.selected = false,
   });
 
+  final String key;
   final Product product;
+  final List<ProductVariant> variants;
+  final int? variantId;
   final int quantity;
-  final bool selected;
+
+  bool get requiresVariant => variants.isNotEmpty;
+
+  int get unitPriceInPaisa {
+    if (variantId != null) {
+      for (final variant in variants) {
+        if (variant.id == variantId) return variant.priceInPaisa;
+      }
+    }
+    return product.priceInPaisa;
+  }
+
+  String get displayName {
+    if (variantId != null) {
+      for (final variant in variants) {
+        if (variant.id == variantId) {
+          return '${product.name} (${variant.name})';
+        }
+      }
+    }
+    return product.name;
+  }
 
   DealItemDraft copyWith({
+    String? key,
     Product? product,
+    List<ProductVariant>? variants,
+    int? variantId,
+    bool clearVariantId = false,
     int? quantity,
-    bool? selected,
   }) {
     return DealItemDraft(
+      key: key ?? this.key,
       product: product ?? this.product,
+      variants: variants ?? this.variants,
+      variantId: clearVariantId ? null : (variantId ?? this.variantId),
       quantity: quantity ?? this.quantity,
-      selected: selected ?? this.selected,
     );
   }
 
   @override
-  List<Object?> get props => [product.id, quantity, selected];
+  List<Object?> get props => [key, product.id, variantId, quantity];
 }
 
 class DealFormState extends Equatable {
@@ -38,7 +69,6 @@ class DealFormState extends Equatable {
     this.priceInPaisa = 0,
     this.isAvailable = true,
     this.items = const [],
-    this.searchQuery = '',
     this.isLoading = false,
     this.isSaving = false,
     this.isLoaded = false,
@@ -51,27 +81,15 @@ class DealFormState extends Equatable {
   final int priceInPaisa;
   final bool isAvailable;
   final List<DealItemDraft> items;
-  final String searchQuery;
   final bool isLoading;
   final bool isSaving;
   final bool isLoaded;
 
   bool get isEditing => dealId != null;
 
-  List<DealItemDraft> get selectedItems =>
-      items.where((item) => item.selected && item.quantity > 0).toList();
-
-  List<DealItemDraft> get filteredItems {
-    if (searchQuery.isEmpty) return items;
-    final query = searchQuery.toLowerCase();
-    return items
-        .where((item) => item.product.name.toLowerCase().contains(query))
-        .toList();
-  }
-
-  int get originalTotalInPaisa => selectedItems.fold(
+  int get originalTotalInPaisa => items.fold(
         0,
-        (sum, item) => sum + item.product.priceInPaisa * item.quantity,
+        (sum, item) => sum + item.unitPriceInPaisa * item.quantity,
       );
 
   int get savingsInPaisa => originalTotalInPaisa - priceInPaisa;
@@ -84,7 +102,6 @@ class DealFormState extends Equatable {
     int? priceInPaisa,
     bool? isAvailable,
     List<DealItemDraft>? items,
-    String? searchQuery,
     bool? isLoading,
     bool? isSaving,
     bool? isLoaded,
@@ -98,7 +115,6 @@ class DealFormState extends Equatable {
       priceInPaisa: priceInPaisa ?? this.priceInPaisa,
       isAvailable: isAvailable ?? this.isAvailable,
       items: items ?? this.items,
-      searchQuery: searchQuery ?? this.searchQuery,
       isLoading: isLoading ?? this.isLoading,
       isSaving: isSaving ?? this.isSaving,
       isLoaded: isLoaded ?? this.isLoaded,
@@ -114,9 +130,22 @@ class DealFormState extends Equatable {
         priceInPaisa,
         isAvailable,
         items,
-        searchQuery,
         isLoading,
         isSaving,
         isLoaded,
       ];
+}
+
+class DealAddProductInput {
+  const DealAddProductInput({
+    required this.product,
+    required this.variants,
+    this.variantId,
+    this.quantity = 1,
+  });
+
+  final Product product;
+  final List<ProductVariant> variants;
+  final int? variantId;
+  final int quantity;
 }

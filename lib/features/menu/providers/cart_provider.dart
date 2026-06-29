@@ -58,8 +58,8 @@ class CartNotifier extends Notifier<CartState> {
         dealItemNames: [
           for (final item in deal.items)
             item.quantity > 1
-                ? '${item.product.name} x${item.quantity}'
-                : item.product.name,
+                ? '${item.displayName} x${item.quantity}'
+                : item.displayName,
         ],
       ),
     );
@@ -199,7 +199,7 @@ class CartNotifier extends Notifier<CartState> {
             subtotalInPaisa: totals.subtotalInPaisa,
             taxInPaisa: Value(totals.taxInPaisa),
             totalInPaisa: totals.totalInPaisa,
-            status: const Value(OrderStatus.open),
+            orderStatus: const Value(OrderStatus.inProgress),
             notes: state.notes.trim().isEmpty
                 ? const Value.absent()
                 : Value(state.notes.trim()),

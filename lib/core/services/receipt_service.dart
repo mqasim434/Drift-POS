@@ -28,7 +28,7 @@ class ReceiptService {
     final doc = pw.Document();
     final orderType = OrderType.fromDbValue(order.order.orderType);
     final thermalFormat = _thermalPageFormat(pageFormat);
-    final dashCount = _dashCharacterCount(thermalFormat);
+    final ruleCount = _ruleCharacterCount(thermalFormat);
 
     doc.addPage(
       pw.Page(
@@ -37,22 +37,27 @@ class ReceiptService {
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
-              ..._buildHeader(settings, font, fontBold),
-              _dashedLine(font, dashCount),
-              ..._buildOrderMeta(order, settings, orderType, font),
-              _dashedLine(font, dashCount),
-              ..._buildLineItems(order, settings, font),
-              _dashedLine(font, dashCount),
+              _buildHeader(settings, font, fontBold, ruleCount),
+              _ruleLine(font, ruleCount, heavy: true),
+              ..._buildOrderMeta(order, settings, orderType, font, fontBold),
+              _ruleLine(font, ruleCount),
+              ..._buildLineItems(order, settings, font, fontBold),
+              _ruleLine(font, ruleCount),
               ..._buildTotals(order, settings, font, fontBold),
-              _dashedLine(font, dashCount),
-              pw.SizedBox(height: 8),
+              _ruleLine(font, ruleCount, heavy: true),
+              pw.SizedBox(height: 10),
               pw.Text(
                 settings.thankYouMessage,
                 style: pw.TextStyle(
-                  font: font,
-                  fontSize: 10,
-                  fontStyle: pw.FontStyle.italic,
+                  font: fontBold,
+                  fontSize: 11,
                 ),
+                textAlign: pw.TextAlign.center,
+              ),
+              pw.SizedBox(height: 4),
+              pw.Text(
+                settings.shopName,
+                style: pw.TextStyle(font: font, fontSize: 9),
                 textAlign: pw.TextAlign.center,
               ),
             ],
@@ -64,7 +69,6 @@ class ReceiptService {
     return doc.save();
   }
 
-  /// Always use thermal roll dimensions — ignore A4/Letter from the print dialog.
   PdfPageFormat _thermalPageFormat(PdfPageFormat format) {
     if (format.width <= 58 * PdfPageFormat.mm + 1) {
       return ReceiptPaperFormat.thermal58;
@@ -72,10 +76,10 @@ class ReceiptService {
     return ReceiptPaperFormat.defaultFormat;
   }
 
-  int _dashCharacterCount(PdfPageFormat format) {
+  int _ruleCharacterCount(PdfPageFormat format) {
     final printableMm = format.availableWidth / PdfPageFormat.mm;
-    if (printableMm <= 52) return 20;
-    return 32;
+    if (printableMm <= 52) return 22;
+    return 36;
   }
 
   Future<void> printReceipt(
@@ -198,34 +202,39 @@ class ReceiptService {
     );
   }
 
-  List<pw.Widget> _buildHeader(
+  pw.Widget _buildHeader(
     ShopSettings settings,
     pw.Font font,
     pw.Font fontBold,
+    int ruleCount,
   ) {
-    return [
-      pw.Text(
-        settings.shopName,
-        style: pw.TextStyle(font: fontBold, fontSize: 14),
-        textAlign: pw.TextAlign.center,
-      ),
-      if (settings.address.trim().isNotEmpty) ...[
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
         pw.SizedBox(height: 4),
         pw.Text(
-          settings.address.trim(),
-          style: pw.TextStyle(font: font, fontSize: 9),
+          settings.shopName.toUpperCase(),
+          style: pw.TextStyle(font: fontBold, fontSize: 20),
           textAlign: pw.TextAlign.center,
         ),
+        pw.SizedBox(height: 6),
+        if (settings.address.trim().isNotEmpty)
+          pw.Text(
+            settings.address.trim(),
+            style: pw.TextStyle(font: font, fontSize: 10),
+            textAlign: pw.TextAlign.center,
+          ),
+        if (settings.phone.trim().isNotEmpty) ...[
+          pw.SizedBox(height: 4),
+          pw.Text(
+            'Tel: ${settings.phone.trim()}',
+            style: pw.TextStyle(font: fontBold, fontSize: 10),
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
+        pw.SizedBox(height: 8),
       ],
-      if (settings.phone.trim().isNotEmpty) ...[
-        pw.SizedBox(height: 2),
-        pw.Text(
-          settings.phone.trim(),
-          style: pw.TextStyle(font: font, fontSize: 9),
-          textAlign: pw.TextAlign.center,
-        ),
-      ],
-    ];
+    );
   }
 
   List<pw.Widget> _buildOrderMeta(
@@ -233,31 +242,37 @@ class ReceiptService {
     ShopSettings settings,
     OrderType? orderType,
     pw.Font font,
+    pw.Font fontBold,
   ) {
     final widgets = <pw.Widget>[
       pw.Text(
-        'Order: ${order.order.orderNumber}',
-        style: pw.TextStyle(font: font, fontSize: 9),
+        order.order.orderNumber,
+        style: pw.TextStyle(font: fontBold, fontSize: 13),
+        textAlign: pw.TextAlign.center,
       ),
+      pw.SizedBox(height: 4),
       pw.Text(
-        'Date: ${DateFormatter.formatDateTime(order.order.createdAt)}',
-        style: pw.TextStyle(font: font, fontSize: 9),
+        DateFormatter.formatDateTime(order.order.createdAt),
+        style: pw.TextStyle(font: font, fontSize: 10),
+        textAlign: pw.TextAlign.center,
       ),
     ];
 
     if (settings.showOrderTypeOnReceipt && orderType != null) {
-      final buffer = StringBuffer('Type: ${orderType.label}');
+      final buffer = StringBuffer(orderType.label.toUpperCase());
       if (settings.showTableOnReceipt &&
           orderType == OrderType.dineIn &&
           order.tableName != null) {
-        buffer.write(' | Table ${order.tableName}');
+        buffer.write('  •  TABLE ${order.tableName!.toUpperCase()}');
       }
-      widgets.add(
+      widgets.addAll([
+        pw.SizedBox(height: 4),
         pw.Text(
           buffer.toString(),
-          style: pw.TextStyle(font: font, fontSize: 9),
+          style: pw.TextStyle(font: fontBold, fontSize: 10),
+          textAlign: pw.TextAlign.center,
         ),
-      );
+      ]);
     }
 
     if (orderType == OrderType.delivery) {
@@ -265,71 +280,117 @@ class ReceiptService {
       final customerContact = order.order.customerContact?.trim();
       final deliveryAddress = order.order.deliveryAddress?.trim();
 
+      widgets.add(pw.SizedBox(height: 6));
       if (customerName != null && customerName.isNotEmpty) {
-        widgets.add(
-          pw.Text(
-            'Customer: $customerName',
-            style: pw.TextStyle(font: font, fontSize: 9),
-          ),
-        );
+        widgets.add(_metaLine('Customer', customerName, font, fontBold));
       }
       if (customerContact != null && customerContact.isNotEmpty) {
-        widgets.add(
-          pw.Text(
-            'Contact: $customerContact',
-            style: pw.TextStyle(font: font, fontSize: 9),
-          ),
-        );
+        widgets.add(_metaLine('Contact', customerContact, font, fontBold));
       }
       if (deliveryAddress != null && deliveryAddress.isNotEmpty) {
-        widgets.add(
-          pw.Text(
-            'Address: $deliveryAddress',
-            style: pw.TextStyle(font: font, fontSize: 9),
-          ),
-        );
+        widgets.add(_metaLine('Address', deliveryAddress, font, fontBold));
       }
     }
 
     return widgets;
   }
 
+  pw.Widget _metaLine(
+    String label,
+    String value,
+    pw.Font font,
+    pw.Font fontBold,
+  ) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 2),
+      child: pw.RichText(
+        text: pw.TextSpan(
+          children: [
+            pw.TextSpan(
+              text: '$label: ',
+              style: pw.TextStyle(font: fontBold, fontSize: 9),
+            ),
+            pw.TextSpan(
+              text: value,
+              style: pw.TextStyle(font: font, fontSize: 9),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   List<pw.Widget> _buildLineItems(
     OrderWithItems order,
     ShopSettings settings,
     pw.Font font,
+    pw.Font fontBold,
   ) {
     return [
+      pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 4),
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text('ITEM', style: pw.TextStyle(font: fontBold, fontSize: 9)),
+            pw.Text('AMOUNT', style: pw.TextStyle(font: fontBold, fontSize: 9)),
+          ],
+        ),
+      ),
       for (final item in order.items) ...[
         if (item.isDeal) ...[
-          pw.Text(
+          _itemRow(
             'Deal: ${item.itemName} x${item.quantity}',
-            style: pw.TextStyle(font: font, fontSize: 9),
+            item.totalPriceInPaisa,
+            settings,
+            fontBold,
           ),
           if (_dealComponents(item).isNotEmpty)
-            pw.Text(
-              '  ∟ ${_dealComponents(item).join(', ')}',
-              style: pw.TextStyle(
-                font: font,
-                fontSize: 8,
-                fontStyle: pw.FontStyle.italic,
+            pw.Padding(
+              padding: const pw.EdgeInsets.only(left: 8, bottom: 2),
+              child: pw.Text(
+                '∟ ${_dealComponents(item).join(', ')}',
+                style: pw.TextStyle(
+                  font: font,
+                  fontSize: 8,
+                  fontStyle: pw.FontStyle.italic,
+                ),
               ),
             ),
         ] else
-          pw.Text(
+          _itemRow(
             '${item.itemName} x${item.quantity}',
-            style: pw.TextStyle(font: font, fontSize: 9),
+            item.totalPriceInPaisa,
+            settings,
+            font,
           ),
-        pw.Align(
-          alignment: pw.Alignment.centerRight,
-          child: pw.Text(
-            _formatMoney(item.totalPriceInPaisa, settings),
-            style: pw.TextStyle(font: font, fontSize: 9),
-          ),
-        ),
-        pw.SizedBox(height: 6),
+        pw.SizedBox(height: 4),
       ],
     ];
+  }
+
+  pw.Widget _itemRow(
+    String label,
+    int amountInPaisa,
+    ShopSettings settings,
+    pw.Font font,
+  ) {
+    return pw.Row(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Expanded(
+          child: pw.Text(
+            label,
+            style: pw.TextStyle(font: font, fontSize: 10),
+          ),
+        ),
+        pw.SizedBox(width: 8),
+        pw.Text(
+          _formatMoney(amountInPaisa, settings),
+          style: pw.TextStyle(font: font, fontSize: 10),
+        ),
+      ],
+    );
   }
 
   List<pw.Widget> _buildTotals(
@@ -345,38 +406,34 @@ class ReceiptService {
     );
 
     return [
+      _totalLine('Subtotal', order.order.subtotalInPaisa, settings, font),
       _totalLine(
-        'Subtotal:',
-        order.order.subtotalInPaisa,
-        settings,
-        font,
-      ),
-      _totalLine(
-        '${settings.taxLabel} ($taxPercent%):',
+        '${settings.taxLabel} ($taxPercent%)',
         order.order.taxInPaisa,
         settings,
         font,
       ),
       if (order.order.discountInPaisa > 0)
-        _totalLine(
-          'Discount:',
-          order.order.discountInPaisa,
-          settings,
-          font,
+        _totalLine('Discount', order.order.discountInPaisa, settings, font),
+      pw.SizedBox(height: 6),
+      pw.Container(
+        padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+        decoration: pw.BoxDecoration(
+          border: pw.Border.all(width: 1.5),
         ),
-      pw.SizedBox(height: 4),
-      pw.Row(
-        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-        children: [
-          pw.Text(
-            'TOTAL:',
-            style: pw.TextStyle(font: fontBold, fontSize: 14),
-          ),
-          pw.Text(
-            _formatMoney(order.order.totalInPaisa, settings),
-            style: pw.TextStyle(font: fontBold, fontSize: 14),
-          ),
-        ],
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              'TOTAL',
+              style: pw.TextStyle(font: fontBold, fontSize: 16),
+            ),
+            pw.Text(
+              _formatMoney(order.order.totalInPaisa, settings),
+              style: pw.TextStyle(font: fontBold, fontSize: 16),
+            ),
+          ],
+        ),
       ),
     ];
   }
@@ -388,26 +445,26 @@ class ReceiptService {
     pw.Font font,
   ) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 2),
+      padding: const pw.EdgeInsets.only(bottom: 3),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Text(label, style: pw.TextStyle(font: font, fontSize: 9)),
+          pw.Text(label, style: pw.TextStyle(font: font, fontSize: 10)),
           pw.Text(
             _formatMoney(amountInPaisa, settings),
-            style: pw.TextStyle(font: font, fontSize: 9),
+            style: pw.TextStyle(font: font, fontSize: 10),
           ),
         ],
       ),
     );
   }
 
-  pw.Widget _dashedLine(pw.Font font, int count) {
+  pw.Widget _ruleLine(pw.Font font, int count, {bool heavy = false}) {
     return pw.Padding(
-      padding: const pw.EdgeInsets.symmetric(vertical: 8),
+      padding: pw.EdgeInsets.symmetric(vertical: heavy ? 10 : 8),
       child: pw.Text(
-        '-' * count,
-        style: pw.TextStyle(font: font, fontSize: 9),
+        heavy ? '=' * count : '-' * count,
+        style: pw.TextStyle(font: font, fontSize: heavy ? 10 : 9),
         textAlign: pw.TextAlign.center,
       ),
     );

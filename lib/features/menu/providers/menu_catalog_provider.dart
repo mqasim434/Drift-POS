@@ -7,6 +7,9 @@ import '../../../core/models/deal_with_items.dart';
 import '../../../core/models/menu_catalog.dart';
 import '../../../core/providers/database_provider.dart';
 
+/// Sentinel category id — selecting this tab shows deals only.
+const menuDealsCategoryFilter = -1;
+
 final menuCatalogProvider =
     AsyncNotifierProvider<MenuCatalogNotifier, MenuCatalog>(
   MenuCatalogNotifier.new,
@@ -15,6 +18,7 @@ final menuCatalogProvider =
 class MenuCatalogNotifier extends AsyncNotifier<MenuCatalog> {
   StreamSubscription<List<Product>>? _productsSub;
   StreamSubscription<List<Deal>>? _dealsSub;
+  StreamSubscription<List<DealItem>>? _dealItemsSub;
   StreamSubscription<List<ProductVariant>>? _variantsSub;
 
   @override
@@ -23,25 +27,34 @@ class MenuCatalogNotifier extends AsyncNotifier<MenuCatalog> {
 
     _productsSub?.cancel();
     _dealsSub?.cancel();
+    _dealItemsSub?.cancel();
     _variantsSub?.cancel();
 
-    _productsSub = db.productsDao.watchAllProducts().listen((_) async {
-      state = AsyncData(await _loadCatalog(db));
+    _productsSub = db.productsDao.watchAllProducts().listen((_) {
+      unawaited(_refresh(db));
     });
-    _dealsSub = db.dealsDao.watchAllDeals().listen((_) async {
-      state = AsyncData(await _loadCatalog(db));
+    _dealsSub = db.dealsDao.watchAllDeals().listen((_) {
+      unawaited(_refresh(db));
     });
-    _variantsSub = db.productVariantsDao.watchAllVariants().listen((_) async {
-      state = AsyncData(await _loadCatalog(db));
+    _dealItemsSub = db.select(db.dealItems).watch().listen((_) {
+      unawaited(_refresh(db));
+    });
+    _variantsSub = db.productVariantsDao.watchAllVariants().listen((_) {
+      unawaited(_refresh(db));
     });
 
     ref.onDispose(() {
       _productsSub?.cancel();
       _dealsSub?.cancel();
+      _dealItemsSub?.cancel();
       _variantsSub?.cancel();
     });
 
     return _loadCatalog(db);
+  }
+
+  Future<void> _refresh(AppDatabase db) async {
+    state = AsyncData(await _loadCatalog(db));
   }
 
   Future<MenuCatalog> _loadCatalog(AppDatabase db) async {
@@ -65,29 +78,58 @@ final activeTablesProvider = StreamProvider<List<RestaurantTable>>((ref) {
 
 typedef MenuGridEntry = ({bool isDeal, MenuProduct? product, DealWithItems? deal});
 
+const menuDealsCategoryName = 'Deals';
+
+bool isDealsCategoryName(String name) =>
+    name.trim().toLowerCase() == menuDealsCategoryName.toLowerCase();
+
+int? findDealsCategoryId(Iterable<Category> categories) {
+  for (final category in categories) {
+    if (category.isActive && isDealsCategoryName(category.name)) {
+      return category.id;
+    }
+  }
+  return null;
+}
+
 List<MenuGridEntry> filterMenuEntries({
   required MenuCatalog catalog,
   required int? categoryId,
   required String searchQuery,
+  int? dealsCategoryId,
 }) {
   final query = searchQuery.trim().toLowerCase();
+
+  bool matchesDeal(DealWithItems deal) =>
+      query.isEmpty || deal.name.toLowerCase().contains(query);
+
+  bool matchesProduct(MenuProduct product) =>
+      query.isEmpty || product.name.toLowerCase().contains(query);
+
+  if (categoryId == menuDealsCategoryFilter) {
+    return [
+      for (final deal in catalog.deals)
+        if (matchesDeal(deal)) (isDeal: true, product: null, deal: deal),
+    ];
+  }
+
+  final showDeals = categoryId == null ||
+      (dealsCategoryId != null && categoryId == dealsCategoryId);
+
   final entries = <MenuGridEntry>[];
+
+  if (showDeals) {
+    for (final deal in catalog.deals) {
+      if (matchesDeal(deal)) {
+        entries.add((isDeal: true, product: null, deal: deal));
+      }
+    }
+  }
 
   for (final product in catalog.products) {
     if (categoryId != null && product.categoryId != categoryId) continue;
-    if (query.isNotEmpty && !product.name.toLowerCase().contains(query)) {
-      continue;
-    }
+    if (!matchesProduct(product)) continue;
     entries.add((isDeal: false, product: product, deal: null));
-  }
-
-  if (categoryId == null) {
-    for (final deal in catalog.deals) {
-      if (query.isNotEmpty && !deal.name.toLowerCase().contains(query)) {
-        continue;
-      }
-      entries.add((isDeal: true, product: null, deal: deal));
-    }
   }
 
   return entries;

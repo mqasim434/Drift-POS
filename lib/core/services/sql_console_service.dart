@@ -24,6 +24,7 @@ class SqlConsoleService {
       }
 
       await db.customStatement(trimmed);
+      db.notifyStreamQueriesOfExternalWrite();
       final meta = await db
           .customSelect(
             'SELECT changes() AS affected, last_insert_rowid() AS rowid',

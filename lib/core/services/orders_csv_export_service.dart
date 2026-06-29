@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../database/app_database.dart';
 import '../models/order_models.dart';
+import '../models/order_status.dart';
 import '../models/order_type.dart';
 import '../utils/currency_formatter.dart';
 import '../utils/date_formatter.dart';
@@ -39,7 +40,7 @@ class OrdersCsvExportService {
     final buffer = StringBuffer()
       ..writeln(
         'Order Number,Date,Time,Type,Table,Customer,Contact,Address,'
-        'Subtotal,Tax,Discount,Total,Status,Items,Notes',
+        'Subtotal,Tax,Discount,Total,Order Status,Items,Notes',
       );
 
     for (final entry in orders) {
@@ -58,7 +59,7 @@ class OrdersCsvExportService {
         _cell(CurrencyFormatter.format(order.taxInPaisa)),
         _cell(CurrencyFormatter.format(order.discountInPaisa)),
         _cell(CurrencyFormatter.format(order.totalInPaisa)),
-        _cell(order.status),
+        _cell(OrderStatus.labelFor(order.orderStatus)),
         _cell(_formatItems(entry.items)),
         _cell(order.notes ?? ''),
       ].join(','));

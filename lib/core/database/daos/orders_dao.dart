@@ -57,13 +57,13 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
 
   Future<int> cancelOrder(int id) {
     return (update(orders)..where((o) => o.id.equals(id))).write(
-      const OrdersCompanion(status: Value('cancelled')),
+      const OrdersCompanion(orderStatus: Value('cancelled')),
     );
   }
 
   Future<int> completeOrder(int id) {
     return (update(orders)..where((o) => o.id.equals(id))).write(
-      const OrdersCompanion(status: Value('completed')),
+      const OrdersCompanion(orderStatus: Value('completed')),
     );
   }
 
@@ -101,7 +101,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
                 o.tableId.equals(tableId) &
                 o.createdAt.isBiggerOrEqualValue(from) &
                 o.createdAt.isSmallerThanValue(to) &
-                o.status.equals('open'),
+                o.orderStatus.isIn(['in_progress', 'open']),
           ))
         .get();
   }
@@ -117,7 +117,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
                 o.tableId.isNotNull() &
                 o.createdAt.isBiggerOrEqualValue(from) &
                 o.createdAt.isSmallerThanValue(to) &
-                o.status.equals('open'),
+                o.orderStatus.isIn(['in_progress', 'open']),
           ))
         .get();
 
@@ -133,7 +133,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
             (o) =>
                 o.createdAt.isBiggerOrEqualValue(from) &
                 o.createdAt.isSmallerThanValue(to) &
-                o.status.equals('cancelled').not(),
+                o.orderStatus.equals('cancelled').not(),
           )
           ..orderBy([(o) => OrderingTerm.desc(o.createdAt)]))
         .get();
@@ -201,7 +201,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         ..where(
           orders.createdAt.isBiggerOrEqualValue(hourStart) &
               orders.createdAt.isSmallerThanValue(hourEnd) &
-              orders.status.equals('cancelled').not(),
+              orders.orderStatus.equals('cancelled').not(),
         );
 
       final row = await query.getSingle();
@@ -226,7 +226,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         COALESCE(SUM(total_in_paisa), 0) AS revenue,
         COUNT(*) AS order_count
       FROM orders
-      WHERE created_at >= ? AND created_at < ? AND status != 'cancelled'
+      WHERE created_at >= ? AND created_at < ? AND order_status != 'cancelled'
       GROUP BY strftime('%Y-%m-%d', created_at)
       ORDER BY day ASC
       ''',
@@ -264,7 +264,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         COALESCE(SUM(oi.total_price_in_paisa), 0) AS revenue
       FROM order_items oi
       INNER JOIN orders o ON o.id = oi.order_id
-      WHERE o.created_at >= ? AND o.created_at < ? AND o.status != 'cancelled'
+      WHERE o.created_at >= ? AND o.created_at < ? AND o.order_status != 'cancelled'
       GROUP BY oi.item_name
       ORDER BY quantity DESC
       LIMIT ?
@@ -294,7 +294,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         COALESCE(SUM(CASE WHEN order_type = 'takeaway' THEN 1 ELSE 0 END), 0) AS takeaway,
         COALESCE(SUM(CASE WHEN order_type = 'delivery' THEN 1 ELSE 0 END), 0) AS delivery
       FROM orders
-      WHERE created_at >= ? AND created_at < ? AND status != 'cancelled'
+      WHERE created_at >= ? AND created_at < ? AND order_status != 'cancelled'
       GROUP BY strftime('%Y-%m-%d', created_at)
       ORDER BY day ASC
       ''',
@@ -338,7 +338,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         COALESCE(SUM(CASE WHEN order_type = 'takeaway' THEN 1 ELSE 0 END), 0) AS takeaway,
         COALESCE(SUM(CASE WHEN order_type = 'delivery' THEN 1 ELSE 0 END), 0) AS delivery
       FROM orders
-      WHERE created_at >= ? AND created_at < ? AND status != 'cancelled'
+      WHERE created_at >= ? AND created_at < ? AND order_status != 'cancelled'
       GROUP BY week_key
       ORDER BY week_key ASC
       ''',
@@ -380,7 +380,7 @@ class OrdersDao extends DatabaseAccessor<AppDatabase> with _$OrdersDaoMixin {
         COALESCE(SUM(oi.total_price_in_paisa), 0) AS revenue
       FROM order_items oi
       INNER JOIN orders o ON o.id = oi.order_id
-      WHERE o.created_at >= ? AND o.created_at < ? AND o.status != 'cancelled'
+      WHERE o.created_at >= ? AND o.created_at < ? AND o.order_status != 'cancelled'
       GROUP BY oi.item_name
       ORDER BY revenue DESC
       LIMIT ?

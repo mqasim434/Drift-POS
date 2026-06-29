@@ -48,7 +48,15 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 3;
+  int get schemaVersion => 5;
+
+  /// Raw SQL (e.g. from the dev console) bypasses Drift's write tracking.
+  /// Call this after external writes so [watch] streams refresh the UI.
+  void notifyStreamQueriesOfExternalWrite() {
+    notifyUpdates({
+      for (final table in allTables) TableUpdate.onTable(table),
+    });
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -81,6 +89,18 @@ class AppDatabase extends _$AppDatabase {
           }
           if (from < 3) {
             await m.addColumn(orderItems, orderItems.lineDetails);
+          }
+          if (from < 4) {
+            await customStatement(
+              'ALTER TABLE orders RENAME COLUMN status TO order_status',
+            );
+            await customStatement(
+              "UPDATE orders SET order_status = 'in_progress' "
+              "WHERE order_status = 'open'",
+            );
+          }
+          if (from < 5) {
+            await m.addColumn(dealItems, dealItems.variantId);
           }
         },
       );

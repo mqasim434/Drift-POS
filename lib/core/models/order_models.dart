@@ -10,9 +10,10 @@ class OrderSummary {
   final Order order;
   final int itemCount;
 
-  bool get isCancelled => OrderStatus.isCancelled(order.status);
-  bool get isCompleted => OrderStatus.isCompleted(order.status);
-  bool get isOpen => OrderStatus.isOpen(order.status);
+  bool get isCancelled => OrderStatus.isCancelled(order.orderStatus);
+  bool get isCompleted => OrderStatus.isCompleted(order.orderStatus);
+  bool get isInProgress => OrderStatus.isInProgress(order.orderStatus);
+  bool get isOpen => isInProgress;
 }
 
 class OrderWithItems {
@@ -29,9 +30,10 @@ class OrderWithItems {
   int get itemCount =>
       items.fold<int>(0, (sum, item) => sum + item.quantity);
 
-  bool get isCancelled => OrderStatus.isCancelled(order.status);
-  bool get isCompleted => OrderStatus.isCompleted(order.status);
-  bool get isOpen => OrderStatus.isOpen(order.status);
+  bool get isCancelled => OrderStatus.isCancelled(order.orderStatus);
+  bool get isCompleted => OrderStatus.isCompleted(order.orderStatus);
+  bool get isInProgress => OrderStatus.isInProgress(order.orderStatus);
+  bool get isOpen => isInProgress;
 }
 
 class OrdersStats {
@@ -57,7 +59,8 @@ class OrdersStats {
   final int deliveryCount;
 
   factory OrdersStats.fromOrders(List<Order> orders) {
-    final active = orders.where((order) => OrderStatus.isActive(order.status));
+    final active =
+        orders.where((order) => OrderStatus.isActive(order.orderStatus));
     return OrdersStats(
       totalOrders: active.length,
       revenueInPaisa: active.fold(0, (sum, order) => sum + order.totalInPaisa),

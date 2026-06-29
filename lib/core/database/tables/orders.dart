@@ -15,8 +15,8 @@ class Orders extends Table {
   IntColumn get taxInPaisa => integer().withDefault(const Constant(0))();
   IntColumn get discountInPaisa => integer().withDefault(const Constant(0))();
   IntColumn get totalInPaisa => integer()();
-  TextColumn get status =>
-      text().withDefault(const Constant('open'))();
+  TextColumn get orderStatus =>
+      text().named('order_status').withDefault(const Constant('in_progress'))();
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt =>
       dateTime().withDefault(currentDateAndTime)();

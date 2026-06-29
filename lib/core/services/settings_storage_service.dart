@@ -16,10 +16,32 @@ class SettingsStorageService {
 
     try {
       final json = jsonDecode(raw) as Map<String, dynamic>;
-      return ShopSettings.fromJson(json);
+      final settings = ShopSettings.fromJson(json);
+      final migrated = _migrateLegacyDefaults(settings);
+      if (migrated != settings) {
+        await save(migrated);
+      }
+      return migrated;
     } catch (_) {
       return ShopSettings.defaults;
     }
+  }
+
+  /// Applies City Pizza branding when settings were never customized.
+  static ShopSettings _migrateLegacyDefaults(ShopSettings settings) {
+    final isLegacyShop = settings.shopName == 'DriftPOS' ||
+        settings.shopName == 'QuickPOS';
+    final hasNoContactInfo =
+        settings.address.trim().isEmpty && settings.phone.trim().isEmpty;
+
+    if (!isLegacyShop || !hasNoContactInfo) return settings;
+
+    return settings.copyWith(
+      shopName: ShopSettings.defaults.shopName,
+      address: ShopSettings.defaults.address,
+      phone: ShopSettings.defaults.phone,
+      thankYouMessage: ShopSettings.defaults.thankYouMessage,
+    );
   }
 
   static Future<void> save(ShopSettings settings) async {

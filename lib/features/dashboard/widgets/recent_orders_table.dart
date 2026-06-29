@@ -8,6 +8,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/navigation/nav_item.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
+import '../../orders/widgets/order_status_badge.dart';
 import '../../orders/widgets/order_type_badge.dart';
 
 class RecentOrdersTable extends StatelessWidget {
@@ -104,10 +105,9 @@ class _RecentOrderTile extends StatelessWidget {
                           style: AppTextStyles.caption,
                         ),
                         const SizedBox(width: AppSizes.sm),
-                        OrderTypeBadge(
-                          orderType: order.orderType,
-                          isCancelled: order.status == 'cancelled',
-                        ),
+                        OrderTypeBadge(orderType: order.orderType),
+                        const SizedBox(width: AppSizes.xs),
+                        OrderStatusBadge(orderStatus: order.orderStatus),
                       ],
                     ),
                   ],

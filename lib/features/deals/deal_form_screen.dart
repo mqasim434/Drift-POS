@@ -9,10 +9,10 @@ import '../../core/services/image_storage_service.dart';
 import '../../core/utils/currency_formatter.dart';
 import '../../shared/layouts/feature_scaffold.dart';
 import '../../shared/widgets/currency_input_field.dart';
-import '../../shared/widgets/debounced_search_field.dart';
 import '../../shared/widgets/product_image_widget.dart';
 import 'models/deal_form_state.dart';
 import 'providers/deals_provider.dart';
+import 'widgets/deal_add_product_dialog.dart';
 
 class DealFormScreen extends ConsumerStatefulWidget {
   const DealFormScreen({super.key, this.dealId});
@@ -62,6 +62,12 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
     }
   }
 
+  Future<void> _addProduct() async {
+    final input = await showDealAddProductDialog(context, ref);
+    if (input == null || !mounted) return;
+    ref.read(dealFormProvider.notifier).addProduct(input);
+  }
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -84,6 +90,7 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
   @override
   Widget build(BuildContext context) {
     final form = ref.watch(dealFormProvider);
+    final notifier = ref.read(dealFormProvider.notifier);
 
     if (form.isLoading || !form.isLoaded) {
       return FeatureScaffold(
@@ -128,22 +135,20 @@ class _DealFormScreenState extends ConsumerState<DealFormScreen> {
                 ),
                 initialPaisa: form.priceInPaisa,
                 onPickImage: _pickImage,
-                onAvailableChanged:
-                    ref.read(dealFormProvider.notifier).setAvailable,
-                onPaisaChanged:
-                    ref.read(dealFormProvider.notifier).setPriceInPaisa,
+                onAvailableChanged: notifier.setAvailable,
+                onPaisaChanged: notifier.setPriceInPaisa,
               ),
               const SizedBox(height: AppSizes.lg),
-              _ProductSelectorSection(
-                items: form.filteredItems,
-                onSearch: ref.read(dealFormProvider.notifier).setSearchQuery,
-                onToggle: ref.read(dealFormProvider.notifier).toggleProduct,
-                onQuantityChanged:
-                    ref.read(dealFormProvider.notifier).setQuantity,
+              _DealItemsSection(
+                items: form.items,
+                onAddProduct: _addProduct,
+                onRemove: notifier.removeItem,
+                onQuantityChanged: notifier.setItemQuantity,
+                onVariantChanged: notifier.setItemVariant,
               ),
               const SizedBox(height: AppSizes.lg),
               _DealSummarySection(
-                selectedItems: form.selectedItems,
+                items: form.items,
                 dealPriceInPaisa: form.priceInPaisa,
                 originalTotalInPaisa: form.originalTotalInPaisa,
                 savingsInPaisa: form.savingsInPaisa,
@@ -246,18 +251,20 @@ class _DealInfoSection extends StatelessWidget {
   }
 }
 
-class _ProductSelectorSection extends StatelessWidget {
-  const _ProductSelectorSection({
+class _DealItemsSection extends StatelessWidget {
+  const _DealItemsSection({
     required this.items,
-    required this.onSearch,
-    required this.onToggle,
+    required this.onAddProduct,
+    required this.onRemove,
     required this.onQuantityChanged,
+    required this.onVariantChanged,
   });
 
   final List<DealItemDraft> items;
-  final ValueChanged<String> onSearch;
-  final void Function(int productId, bool selected) onToggle;
-  final void Function(int productId, int quantity) onQuantityChanged;
+  final VoidCallback onAddProduct;
+  final void Function(String key) onRemove;
+  final void Function(String key, int quantity) onQuantityChanged;
+  final void Function(String key, int? variantId) onVariantChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -265,18 +272,26 @@ class _ProductSelectorSection extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(AppSizes.lg),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text('Select Products', style: AppTextStyles.title),
-            const SizedBox(height: AppSizes.md),
-            DebouncedSearchField(
-              hintText: 'Search products...',
-              width: double.infinity,
-              onChanged: onSearch,
+            Row(
+              children: [
+                Expanded(
+                  child: Text('Deal Items', style: AppTextStyles.title),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onAddProduct,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Product'),
+                ),
+              ],
             ),
             const SizedBox(height: AppSizes.md),
             if (items.isEmpty)
-              Text('No products match your search.', style: AppTextStyles.bodySmall)
+              Text(
+                'No products added yet. Tap Add Product to build this deal.',
+                style: AppTextStyles.bodySmall,
+              )
             else
               ListView.separated(
                 shrinkWrap: true,
@@ -285,42 +300,95 @@ class _ProductSelectorSection extends StatelessWidget {
                 separatorBuilder: (_, __) => const Divider(height: 1),
                 itemBuilder: (context, index) {
                   final item = items[index];
-                  return CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    value: item.selected,
-                    onChanged: (value) =>
-                        onToggle(item.product.id, value ?? false),
-                    title: Text(item.product.name, style: AppTextStyles.body),
-                    subtitle: Text(
-                      CurrencyFormatter.format(item.product.priceInPaisa),
-                      style: AppTextStyles.caption,
-                    ),
-                    secondary: SizedBox(
-                      width: 120,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.remove),
-                            onPressed: item.selected && item.quantity > 1
-                                ? () => onQuantityChanged(
-                                      item.product.id,
-                                      item.quantity - 1,
-                                    )
-                                : null,
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: AppSizes.sm),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    item.product.name,
+                                    style: AppTextStyles.body,
+                                  ),
+                                  const SizedBox(height: AppSizes.xs),
+                                  Text(
+                                    CurrencyFormatter.format(
+                                      item.unitPriceInPaisa * item.quantity,
+                                    ),
+                                    style: AppTextStyles.caption,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  tooltip: 'Decrease quantity',
+                                  icon: const Icon(Icons.remove),
+                                  onPressed: item.quantity > 1
+                                      ? () => onQuantityChanged(
+                                            item.key,
+                                            item.quantity - 1,
+                                          )
+                                      : null,
+                                ),
+                                Text(
+                                  '${item.quantity}',
+                                  style: AppTextStyles.body,
+                                ),
+                                IconButton(
+                                  tooltip: 'Increase quantity',
+                                  icon: const Icon(Icons.add),
+                                  onPressed: item.quantity < 99
+                                      ? () => onQuantityChanged(
+                                            item.key,
+                                            item.quantity + 1,
+                                          )
+                                      : null,
+                                ),
+                                IconButton(
+                                  tooltip: 'Remove',
+                                  icon: const Icon(
+                                    Icons.delete_outline,
+                                    color: AppColors.danger,
+                                  ),
+                                  onPressed: () => onRemove(item.key),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        if (item.variants.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: AppSizes.sm),
+                            child: DropdownButtonFormField<int>(
+                              value: item.variantId ?? item.variants.first.id,
+                              decoration: const InputDecoration(
+                                labelText: 'Size / variant',
+                                isDense: true,
+                              ),
+                              items: [
+                                for (final variant in item.variants)
+                                  DropdownMenuItem(
+                                    value: variant.id,
+                                    child: Text(
+                                      '${variant.name} — '
+                                      '${CurrencyFormatter.format(variant.priceInPaisa)}',
+                                    ),
+                                  ),
+                              ],
+                              onChanged: (value) =>
+                                  onVariantChanged(item.key, value),
+                            ),
                           ),
-                          Text('${item.quantity}', style: AppTextStyles.body),
-                          IconButton(
-                            icon: const Icon(Icons.add),
-                            onPressed: item.selected
-                                ? () => onQuantityChanged(
-                                      item.product.id,
-                                      item.quantity + 1,
-                                    )
-                                : null,
-                          ),
-                        ],
-                      ),
+                      ],
                     ),
                   );
                 },
@@ -334,13 +402,13 @@ class _ProductSelectorSection extends StatelessWidget {
 
 class _DealSummarySection extends StatelessWidget {
   const _DealSummarySection({
-    required this.selectedItems,
+    required this.items,
     required this.dealPriceInPaisa,
     required this.originalTotalInPaisa,
     required this.savingsInPaisa,
   });
 
-  final List<DealItemDraft> selectedItems;
+  final List<DealItemDraft> items;
   final int dealPriceInPaisa;
   final int originalTotalInPaisa;
   final int savingsInPaisa;
@@ -356,28 +424,28 @@ class _DealSummarySection extends StatelessWidget {
           children: [
             Text('Summary', style: AppTextStyles.title),
             const SizedBox(height: AppSizes.md),
-            if (selectedItems.isEmpty)
+            if (items.isEmpty)
               Text(
-                'Select at least 2 products.',
+                'Add at least 1 product.',
                 style: AppTextStyles.bodySmall,
               )
             else
               Column(
                 children: [
-                  for (final item in selectedItems)
+                  for (final item in items)
                     Padding(
                       padding: const EdgeInsets.only(bottom: AppSizes.xs),
                       child: Row(
                         children: [
                           Expanded(
                             child: Text(
-                              '${item.product.name} x${item.quantity}',
+                              '${item.displayName} x${item.quantity}',
                               style: AppTextStyles.body,
                             ),
                           ),
                           Text(
                             CurrencyFormatter.format(
-                              item.product.priceInPaisa * item.quantity,
+                              item.unitPriceInPaisa * item.quantity,
                             ),
                             style: AppTextStyles.bodySmall,
                           ),

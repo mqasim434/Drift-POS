@@ -15,6 +15,7 @@ import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../providers/orders_provider.dart';
+import 'order_status_badge.dart';
 import 'order_type_badge.dart';
 
 final orderDetailByIdProvider =
@@ -180,10 +181,13 @@ class OrderDetailContent extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                OrderTypeBadge(
-                  orderType: order.orderType,
-                  isCancelled: detail.isCancelled,
-                  isCompleted: detail.isCompleted,
+                Wrap(
+                  spacing: AppSizes.sm,
+                  runSpacing: AppSizes.sm,
+                  children: [
+                    OrderTypeBadge(orderType: order.orderType),
+                    OrderStatusBadge(orderStatus: order.orderStatus),
+                  ],
                 ),
                 const SizedBox(height: AppSizes.md),
                 if (orderType == OrderType.dineIn && detail.tableName != null)
@@ -306,7 +310,7 @@ class OrderDetailContent extends StatelessWidget {
 }
 
 bool canCancelOrder(Order order) {
-  if (!OrderStatus.isOpen(order.status)) return false;
+  if (!OrderStatus.isInProgress(order.orderStatus)) return false;
   final created = order.createdAt;
   final now = DateTime.now();
   return created.year == now.year &&
@@ -314,7 +318,8 @@ bool canCancelOrder(Order order) {
       created.day == now.day;
 }
 
-bool canCompleteOrder(Order order) => OrderStatus.isOpen(order.status);
+bool canCompleteOrder(Order order) =>
+    OrderStatus.isInProgress(order.orderStatus);
 
 Future<bool> confirmAndCompleteOrder(
   BuildContext context,
@@ -341,7 +346,7 @@ Future<bool> confirmAndCancelOrder(
   Order order,
 ) async {
   if (!canCancelOrder(order)) {
-    if (OrderStatus.isCancelled(order.status)) return false;
+    if (OrderStatus.isCancelled(order.orderStatus)) return false;
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(

@@ -11,6 +11,7 @@ import '../../core/models/cart_totals.dart';
 import '../../core/providers/cart_totals_provider.dart';
 import 'providers/cart_provider.dart';
 import 'providers/menu_catalog_provider.dart';
+import '../categories/providers/categories_provider.dart';
 import 'widgets/cart_panel.dart';
 import 'widgets/category_tabs.dart';
 import 'widgets/product_menu_card.dart';
@@ -45,10 +46,13 @@ class MenuScreen extends ConsumerWidget {
       title: 'Menu',
       body: catalogAsync.when(
         data: (catalog) {
+          final categories = ref.watch(categoriesProvider).valueOrNull ?? [];
+          final dealsCategoryId = findDealsCategoryId(categories);
           final entries = filterMenuEntries(
             catalog: catalog,
             categoryId: categoryId,
             searchQuery: searchQuery,
+            dealsCategoryId: dealsCategoryId,
           );
           final counts = categoryProductCounts(catalog);
 
@@ -59,7 +63,10 @@ class MenuScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    CategoryTabs(productCounts: counts),
+                    CategoryTabs(
+                      productCounts: counts,
+                      dealCount: catalog.deals.length,
+                    ),
                     Padding(
                       padding: const EdgeInsets.fromLTRB(
                         AppSizes.lg,

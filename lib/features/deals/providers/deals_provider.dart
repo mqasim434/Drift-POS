@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/deal_with_items.dart';
 import '../../../core/providers/database_provider.dart';
 import '../models/deal_form_state.dart';
+import '../../menu/providers/menu_catalog_provider.dart';
 
 class DealException implements Exception {
   DealException(this.message);
@@ -30,23 +31,22 @@ final dealFormProvider =
     NotifierProvider<DealFormNotifier, DealFormState>(DealFormNotifier.new);
 
 class DealFormNotifier extends Notifier<DealFormState> {
+  int _nextItemKey = 0;
+
   @override
   DealFormState build() => const DealFormState();
 
+  String _newItemKey() => 'item_${_nextItemKey++}';
+
   Future<void> initializeForCreate() async {
-    state = const DealFormState(isLoading: true);
-    final products =
-        await ref.read(databaseProvider).productsDao.watchAllProducts().first;
-    state = DealFormState(
-      items: products
-          .map((product) => DealItemDraft(product: product))
-          .toList(),
-      isLoaded: true,
-    );
+    _nextItemKey = 0;
+    state = const DealFormState(isLoaded: true);
   }
 
   Future<void> loadDeal(int dealId) async {
     state = state.copyWith(isLoading: true);
+    _nextItemKey = 0;
+
     final db = ref.read(databaseProvider);
     final deal = await db.dealsDao.getDealWithItems(dealId);
     if (deal == null) {
@@ -54,10 +54,8 @@ class DealFormNotifier extends Notifier<DealFormState> {
       return;
     }
 
-    final allProducts = await db.productsDao.watchAllProducts().first;
-    final selectedIds = {
-      for (final item in deal.items) item.product.id: item.quantity,
-    };
+    final variantsByProduct =
+        await db.productVariantsDao.getAllVariantsGrouped();
 
     state = DealFormState(
       dealId: deal.id,
@@ -66,15 +64,16 @@ class DealFormNotifier extends Notifier<DealFormState> {
       imagePath: deal.imagePath,
       priceInPaisa: deal.priceInPaisa,
       isAvailable: deal.isAvailable,
-      items: allProducts
-          .map(
-            (product) => DealItemDraft(
-              product: product,
-              selected: selectedIds.containsKey(product.id),
-              quantity: selectedIds[product.id] ?? 1,
-            ),
-          )
-          .toList(),
+      items: [
+        for (final item in deal.items)
+          DealItemDraft(
+            key: _newItemKey(),
+            product: item.product,
+            variants: variantsByProduct[item.product.id] ?? const [],
+            variantId: item.variant?.id,
+            quantity: item.quantity,
+          ),
+      ],
       isLoaded: true,
     );
   }
@@ -92,30 +91,47 @@ class DealFormNotifier extends Notifier<DealFormState> {
 
   void setAvailable(bool value) => state = state.copyWith(isAvailable: value);
 
-  void setSearchQuery(String value) =>
-      state = state.copyWith(searchQuery: value);
+  void addProduct(DealAddProductInput input) {
+    var variantId = input.variantId;
+    if (input.variants.isNotEmpty && variantId == null) {
+      variantId = input.variants.first.id;
+    }
 
-  void toggleProduct(int productId, bool selected) {
     state = state.copyWith(
       items: [
-        for (final item in state.items)
-          if (item.product.id == productId)
-            item.copyWith(selected: selected, quantity: selected ? item.quantity : 1)
-          else
-            item,
+        ...state.items,
+        DealItemDraft(
+          key: _newItemKey(),
+          product: input.product,
+          variants: input.variants,
+          variantId: variantId,
+          quantity: input.quantity.clamp(1, 99),
+        ),
       ],
     );
   }
 
-  void setQuantity(int productId, int quantity) {
+  void removeItem(String key) {
+    state = state.copyWith(
+      items: state.items.where((item) => item.key != key).toList(),
+    );
+  }
+
+  void setItemVariant(String key, int? variantId) {
+    state = state.copyWith(
+      items: [
+        for (final item in state.items)
+          if (item.key == key) item.copyWith(variantId: variantId) else item,
+      ],
+    );
+  }
+
+  void setItemQuantity(String key, int quantity) {
     final safeQuantity = quantity.clamp(1, 99);
     state = state.copyWith(
       items: [
         for (final item in state.items)
-          if (item.product.id == productId)
-            item.copyWith(quantity: safeQuantity, selected: true)
-          else
-            item,
+          if (item.key == key) item.copyWith(quantity: safeQuantity) else item,
       ],
     );
   }
@@ -128,8 +144,14 @@ class DealFormNotifier extends Notifier<DealFormState> {
     if (state.priceInPaisa <= 0) {
       throw DealException('Deal price must be greater than zero.');
     }
-    if (state.selectedItems.length < 2) {
-      throw DealException('Select at least 2 products for this deal.');
+    if (state.items.isEmpty) {
+      throw DealException('Add at least 1 product to this deal.');
+    }
+
+    for (final item in state.items) {
+      if (item.requiresVariant && item.variantId == null) {
+        throw DealException('Select a variant for ${item.product.name}.');
+      }
     }
 
     final db = ref.read(databaseProvider);
@@ -148,13 +170,18 @@ class DealFormNotifier extends Notifier<DealFormState> {
         imagePath: state.imagePath,
         isAvailable: state.isAvailable,
         items: [
-          for (final item in state.selectedItems)
-            (productId: item.product.id, quantity: item.quantity),
+          for (final item in state.items)
+            (
+              productId: item.product.id,
+              quantity: item.quantity,
+              variantId: item.variantId,
+            ),
         ],
       );
     } finally {
       state = state.copyWith(isSaving: false);
     }
+    ref.invalidate(menuCatalogProvider);
   }
 }
 
@@ -167,9 +194,11 @@ class DealsNotifier extends AsyncNotifier<void> {
 
   Future<void> toggleAvailability(int id) async {
     await ref.read(databaseProvider).dealsDao.toggleAvailability(id);
+    ref.invalidate(menuCatalogProvider);
   }
 
   Future<void> deleteDeal(int id) async {
     await ref.read(databaseProvider).dealsDao.deleteDeal(id);
+    ref.invalidate(menuCatalogProvider);
   }
 }

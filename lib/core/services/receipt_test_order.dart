@@ -18,7 +18,7 @@ OrderWithItems buildTestReceiptOrder(ShopSettings settings) {
       taxInPaisa: taxInPaisa,
       discountInPaisa: 0,
       totalInPaisa: subtotalInPaisa + taxInPaisa,
-      status: 'completed',
+      orderStatus: 'completed',
       createdAt: now,
     ),
     items: const [
