@@ -9,6 +9,10 @@ import '../../../core/models/order_type.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../models/cart_item.dart';
+import '../../../core/providers/database_provider.dart';
+import '../../../core/providers/shop_settings_provider.dart';
+import '../../../core/services/receipt_service.dart';
+import '../../orders/providers/orders_provider.dart';
 import '../providers/cart_provider.dart';
 import '../providers/menu_catalog_provider.dart';
 
@@ -63,10 +67,25 @@ class _CartPanelState extends ConsumerState<CartPanel> {
     notifier.setNotes(_notesController.text);
 
     try {
-      final orderNumber = await notifier.placeOrder();
+      final result = await notifier.placeOrder();
+      if (!mounted) return;
+
+      final db = ref.read(databaseProvider);
+      final settings = await ref.read(shopSettingsProvider.future);
+      final order = await loadOrderWithItems(db, result.orderId);
+      final receiptService = ref.read(receiptServiceProvider);
+
+      if (order != null) {
+        if (settings.autoPrintAfterOrder) {
+          await receiptService.printReceipt(order, settings);
+        } else if (mounted) {
+          await receiptService.showPreview(context, order, settings);
+        }
+      }
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Order $orderNumber placed successfully')),
+        SnackBar(content: Text('Order ${result.orderNumber} placed successfully')),
       );
     } on CartException catch (error) {
       if (!mounted) return;

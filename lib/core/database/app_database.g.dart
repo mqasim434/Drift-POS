@@ -2960,6 +2960,12 @@ class $OrderItemsTable extends OrderItems
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('CHECK ("is_deal" IN (0, 1))'),
       defaultValue: const Constant(false));
+  static const VerificationMeta _lineDetailsMeta =
+      const VerificationMeta('lineDetails');
+  @override
+  late final GeneratedColumn<String> lineDetails = GeneratedColumn<String>(
+      'line_details', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns => [
         id,
@@ -2970,7 +2976,8 @@ class $OrderItemsTable extends OrderItems
         quantity,
         unitPriceInPaisa,
         totalPriceInPaisa,
-        isDeal
+        isDeal,
+        lineDetails
       ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -3031,6 +3038,12 @@ class $OrderItemsTable extends OrderItems
       context.handle(_isDealMeta,
           isDeal.isAcceptableOrUnknown(data['is_deal']!, _isDealMeta));
     }
+    if (data.containsKey('line_details')) {
+      context.handle(
+          _lineDetailsMeta,
+          lineDetails.isAcceptableOrUnknown(
+              data['line_details']!, _lineDetailsMeta));
+    }
     return context;
   }
 
@@ -3058,6 +3071,8 @@ class $OrderItemsTable extends OrderItems
           DriftSqlType.int, data['${effectivePrefix}total_price_in_paisa'])!,
       isDeal: attachedDatabase.typeMapping
           .read(DriftSqlType.bool, data['${effectivePrefix}is_deal'])!,
+      lineDetails: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}line_details']),
     );
   }
 
@@ -3077,6 +3092,7 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
   final int unitPriceInPaisa;
   final int totalPriceInPaisa;
   final bool isDeal;
+  final String? lineDetails;
   const OrderItem(
       {required this.id,
       required this.orderId,
@@ -3086,7 +3102,8 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
       required this.quantity,
       required this.unitPriceInPaisa,
       required this.totalPriceInPaisa,
-      required this.isDeal});
+      required this.isDeal,
+      this.lineDetails});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
@@ -3103,6 +3120,9 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
     map['unit_price_in_paisa'] = Variable<int>(unitPriceInPaisa);
     map['total_price_in_paisa'] = Variable<int>(totalPriceInPaisa);
     map['is_deal'] = Variable<bool>(isDeal);
+    if (!nullToAbsent || lineDetails != null) {
+      map['line_details'] = Variable<String>(lineDetails);
+    }
     return map;
   }
 
@@ -3120,6 +3140,9 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
       unitPriceInPaisa: Value(unitPriceInPaisa),
       totalPriceInPaisa: Value(totalPriceInPaisa),
       isDeal: Value(isDeal),
+      lineDetails: lineDetails == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lineDetails),
     );
   }
 
@@ -3136,6 +3159,7 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
       unitPriceInPaisa: serializer.fromJson<int>(json['unitPriceInPaisa']),
       totalPriceInPaisa: serializer.fromJson<int>(json['totalPriceInPaisa']),
       isDeal: serializer.fromJson<bool>(json['isDeal']),
+      lineDetails: serializer.fromJson<String?>(json['lineDetails']),
     );
   }
   @override
@@ -3151,6 +3175,7 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
       'unitPriceInPaisa': serializer.toJson<int>(unitPriceInPaisa),
       'totalPriceInPaisa': serializer.toJson<int>(totalPriceInPaisa),
       'isDeal': serializer.toJson<bool>(isDeal),
+      'lineDetails': serializer.toJson<String?>(lineDetails),
     };
   }
 
@@ -3163,7 +3188,8 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
           int? quantity,
           int? unitPriceInPaisa,
           int? totalPriceInPaisa,
-          bool? isDeal}) =>
+          bool? isDeal,
+          Value<String?> lineDetails = const Value.absent()}) =>
       OrderItem(
         id: id ?? this.id,
         orderId: orderId ?? this.orderId,
@@ -3174,6 +3200,7 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
         unitPriceInPaisa: unitPriceInPaisa ?? this.unitPriceInPaisa,
         totalPriceInPaisa: totalPriceInPaisa ?? this.totalPriceInPaisa,
         isDeal: isDeal ?? this.isDeal,
+        lineDetails: lineDetails.present ? lineDetails.value : this.lineDetails,
       );
   OrderItem copyWithCompanion(OrderItemsCompanion data) {
     return OrderItem(
@@ -3190,6 +3217,8 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
           ? data.totalPriceInPaisa.value
           : this.totalPriceInPaisa,
       isDeal: data.isDeal.present ? data.isDeal.value : this.isDeal,
+      lineDetails:
+          data.lineDetails.present ? data.lineDetails.value : this.lineDetails,
     );
   }
 
@@ -3204,14 +3233,15 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
           ..write('quantity: $quantity, ')
           ..write('unitPriceInPaisa: $unitPriceInPaisa, ')
           ..write('totalPriceInPaisa: $totalPriceInPaisa, ')
-          ..write('isDeal: $isDeal')
+          ..write('isDeal: $isDeal, ')
+          ..write('lineDetails: $lineDetails')
           ..write(')'))
         .toString();
   }
 
   @override
   int get hashCode => Object.hash(id, orderId, productId, dealId, itemName,
-      quantity, unitPriceInPaisa, totalPriceInPaisa, isDeal);
+      quantity, unitPriceInPaisa, totalPriceInPaisa, isDeal, lineDetails);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3224,7 +3254,8 @@ class OrderItem extends DataClass implements Insertable<OrderItem> {
           other.quantity == this.quantity &&
           other.unitPriceInPaisa == this.unitPriceInPaisa &&
           other.totalPriceInPaisa == this.totalPriceInPaisa &&
-          other.isDeal == this.isDeal);
+          other.isDeal == this.isDeal &&
+          other.lineDetails == this.lineDetails);
 }
 
 class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
@@ -3237,6 +3268,7 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
   final Value<int> unitPriceInPaisa;
   final Value<int> totalPriceInPaisa;
   final Value<bool> isDeal;
+  final Value<String?> lineDetails;
   const OrderItemsCompanion({
     this.id = const Value.absent(),
     this.orderId = const Value.absent(),
@@ -3247,6 +3279,7 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
     this.unitPriceInPaisa = const Value.absent(),
     this.totalPriceInPaisa = const Value.absent(),
     this.isDeal = const Value.absent(),
+    this.lineDetails = const Value.absent(),
   });
   OrderItemsCompanion.insert({
     this.id = const Value.absent(),
@@ -3258,6 +3291,7 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
     required int unitPriceInPaisa,
     required int totalPriceInPaisa,
     this.isDeal = const Value.absent(),
+    this.lineDetails = const Value.absent(),
   })  : orderId = Value(orderId),
         itemName = Value(itemName),
         quantity = Value(quantity),
@@ -3273,6 +3307,7 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
     Expression<int>? unitPriceInPaisa,
     Expression<int>? totalPriceInPaisa,
     Expression<bool>? isDeal,
+    Expression<String>? lineDetails,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
@@ -3284,6 +3319,7 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
       if (unitPriceInPaisa != null) 'unit_price_in_paisa': unitPriceInPaisa,
       if (totalPriceInPaisa != null) 'total_price_in_paisa': totalPriceInPaisa,
       if (isDeal != null) 'is_deal': isDeal,
+      if (lineDetails != null) 'line_details': lineDetails,
     });
   }
 
@@ -3296,7 +3332,8 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
       Value<int>? quantity,
       Value<int>? unitPriceInPaisa,
       Value<int>? totalPriceInPaisa,
-      Value<bool>? isDeal}) {
+      Value<bool>? isDeal,
+      Value<String?>? lineDetails}) {
     return OrderItemsCompanion(
       id: id ?? this.id,
       orderId: orderId ?? this.orderId,
@@ -3307,6 +3344,7 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
       unitPriceInPaisa: unitPriceInPaisa ?? this.unitPriceInPaisa,
       totalPriceInPaisa: totalPriceInPaisa ?? this.totalPriceInPaisa,
       isDeal: isDeal ?? this.isDeal,
+      lineDetails: lineDetails ?? this.lineDetails,
     );
   }
 
@@ -3340,6 +3378,9 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
     if (isDeal.present) {
       map['is_deal'] = Variable<bool>(isDeal.value);
     }
+    if (lineDetails.present) {
+      map['line_details'] = Variable<String>(lineDetails.value);
+    }
     return map;
   }
 
@@ -3354,7 +3395,8 @@ class OrderItemsCompanion extends UpdateCompanion<OrderItem> {
           ..write('quantity: $quantity, ')
           ..write('unitPriceInPaisa: $unitPriceInPaisa, ')
           ..write('totalPriceInPaisa: $totalPriceInPaisa, ')
-          ..write('isDeal: $isDeal')
+          ..write('isDeal: $isDeal, ')
+          ..write('lineDetails: $lineDetails')
           ..write(')'))
         .toString();
   }
@@ -5953,6 +5995,7 @@ typedef $$OrderItemsTableCreateCompanionBuilder = OrderItemsCompanion Function({
   required int unitPriceInPaisa,
   required int totalPriceInPaisa,
   Value<bool> isDeal,
+  Value<String?> lineDetails,
 });
 typedef $$OrderItemsTableUpdateCompanionBuilder = OrderItemsCompanion Function({
   Value<int> id,
@@ -5964,6 +6007,7 @@ typedef $$OrderItemsTableUpdateCompanionBuilder = OrderItemsCompanion Function({
   Value<int> unitPriceInPaisa,
   Value<int> totalPriceInPaisa,
   Value<bool> isDeal,
+  Value<String?> lineDetails,
 });
 
 final class $$OrderItemsTableReferences
@@ -6042,6 +6086,9 @@ class $$OrderItemsTableFilterComposer
 
   ColumnFilters<bool> get isDeal => $composableBuilder(
       column: $table.isDeal, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get lineDetails => $composableBuilder(
+      column: $table.lineDetails, builder: (column) => ColumnFilters(column));
 
   $$OrdersTableFilterComposer get orderId {
     final $$OrdersTableFilterComposer composer = $composerBuilder(
@@ -6133,6 +6180,9 @@ class $$OrderItemsTableOrderingComposer
   ColumnOrderings<bool> get isDeal => $composableBuilder(
       column: $table.isDeal, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get lineDetails => $composableBuilder(
+      column: $table.lineDetails, builder: (column) => ColumnOrderings(column));
+
   $$OrdersTableOrderingComposer get orderId {
     final $$OrdersTableOrderingComposer composer = $composerBuilder(
         composer: this,
@@ -6220,6 +6270,9 @@ class $$OrderItemsTableAnnotationComposer
 
   GeneratedColumn<bool> get isDeal =>
       $composableBuilder(column: $table.isDeal, builder: (column) => column);
+
+  GeneratedColumn<String> get lineDetails => $composableBuilder(
+      column: $table.lineDetails, builder: (column) => column);
 
   $$OrdersTableAnnotationComposer get orderId {
     final $$OrdersTableAnnotationComposer composer = $composerBuilder(
@@ -6314,6 +6367,7 @@ class $$OrderItemsTableTableManager extends RootTableManager<
             Value<int> unitPriceInPaisa = const Value.absent(),
             Value<int> totalPriceInPaisa = const Value.absent(),
             Value<bool> isDeal = const Value.absent(),
+            Value<String?> lineDetails = const Value.absent(),
           }) =>
               OrderItemsCompanion(
             id: id,
@@ -6325,6 +6379,7 @@ class $$OrderItemsTableTableManager extends RootTableManager<
             unitPriceInPaisa: unitPriceInPaisa,
             totalPriceInPaisa: totalPriceInPaisa,
             isDeal: isDeal,
+            lineDetails: lineDetails,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
@@ -6336,6 +6391,7 @@ class $$OrderItemsTableTableManager extends RootTableManager<
             required int unitPriceInPaisa,
             required int totalPriceInPaisa,
             Value<bool> isDeal = const Value.absent(),
+            Value<String?> lineDetails = const Value.absent(),
           }) =>
               OrderItemsCompanion.insert(
             id: id,
@@ -6347,6 +6403,7 @@ class $$OrderItemsTableTableManager extends RootTableManager<
             unitPriceInPaisa: unitPriceInPaisa,
             totalPriceInPaisa: totalPriceInPaisa,
             isDeal: isDeal,
+            lineDetails: lineDetails,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

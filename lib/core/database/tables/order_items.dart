@@ -15,4 +15,5 @@ class OrderItems extends Table {
   IntColumn get unitPriceInPaisa => integer()();
   IntColumn get totalPriceInPaisa => integer()();
   BoolColumn get isDeal => boolean().withDefault(const Constant(false))();
+  TextColumn get lineDetails => text().nullable()();
 }

@@ -1,8 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/database/app_database.dart';
 import '../../../core/models/order_models.dart';
 import '../../../core/models/orders_date_range.dart';
 import '../../../core/providers/database_provider.dart';
+
+Future<OrderWithItems?> loadOrderWithItems(AppDatabase db, int orderId) async {
+  final order = await db.ordersDao.getOrderById(orderId);
+  if (order == null) return null;
+
+  final items = await db.ordersDao.getItemsForOrder(orderId);
+  String? tableName;
+  if (order.tableId != null) {
+    final tables = await db.tablesDao.watchAllTables().first;
+    tableName = tables
+        .where((table) => table.id == order.tableId)
+        .map((table) => table.name)
+        .firstOrNull;
+  }
+
+  return OrderWithItems(order: order, items: items, tableName: tableName);
+}
 
 final ordersFilterProvider =
     StateProvider<OrdersDateRange>((ref) => OrdersDateRange.today());
@@ -42,20 +60,7 @@ final selectedOrderProvider = FutureProvider<OrderWithItems?>((ref) async {
   if (orderId == null) return null;
 
   final db = ref.watch(databaseProvider);
-  final order = await db.ordersDao.getOrderById(orderId);
-  if (order == null) return null;
-
-  final items = await db.ordersDao.getItemsForOrder(orderId);
-  String? tableName;
-  if (order.tableId != null) {
-    final tables = await db.tablesDao.watchAllTables().first;
-    tableName = tables
-        .where((table) => table.id == order.tableId)
-        .map((table) => table.name)
-        .firstOrNull;
-  }
-
-  return OrderWithItems(order: order, items: items, tableName: tableName);
+  return loadOrderWithItems(db, orderId);
 });
 
 final ordersNotifierProvider =

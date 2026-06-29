@@ -9,6 +9,8 @@ import '../../../core/models/order_type.dart';
 import '../../../core/utils/currency_formatter.dart';
 import '../../../core/utils/date_formatter.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
+import '../../../core/providers/shop_settings_provider.dart';
+import '../../../core/services/receipt_service.dart';
 import '../providers/orders_provider.dart';
 import 'order_type_badge.dart';
 
@@ -44,13 +46,7 @@ class OrderDetailPanel extends ConsumerWidget {
             detail: detail,
             onClose: onClose,
             onCancel: () => _cancelOrder(context, ref, detail),
-            onPrint: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Receipt printing will be available in a later module'),
-                ),
-              );
-            },
+            onPrint: () => _printReceipt(context, ref, detail),
           );
         },
         loading: () => const Center(child: Text('Loading order...')),
@@ -62,6 +58,16 @@ class OrderDetailPanel extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _printReceipt(
+    BuildContext context,
+    WidgetRef ref,
+    OrderWithItems detail,
+  ) async {
+    final settings = await ref.read(shopSettingsProvider.future);
+    if (!context.mounted) return;
+    await ref.read(receiptServiceProvider).showPreview(context, detail, settings);
   }
 
   Future<void> _cancelOrder(

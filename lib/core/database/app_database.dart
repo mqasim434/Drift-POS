@@ -48,7 +48,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.test() : super(NativeDatabase.memory());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -78,6 +78,9 @@ class AppDatabase extends _$AppDatabase {
             await customStatement(
               'CREATE INDEX idx_product_variants_product_id ON product_variants(product_id);',
             );
+          }
+          if (from < 3) {
+            await m.addColumn(orderItems, orderItems.lineDetails);
           }
         },
       );

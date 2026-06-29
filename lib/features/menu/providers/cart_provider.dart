@@ -6,6 +6,7 @@ import '../../../core/models/deal_with_items.dart';
 import '../../../core/models/menu_catalog.dart';
 import '../../../core/models/order_type.dart';
 import '../../../core/providers/database_provider.dart';
+import '../../../core/models/placed_order_result.dart';
 import '../../../core/utils/order_number_generator.dart';
 import '../models/cart_item.dart';
 import '../models/cart_state.dart';
@@ -141,7 +142,7 @@ class CartNotifier extends Notifier<CartState> {
 
   void setNotes(String value) => state = state.copyWith(notes: value);
 
-  Future<String> placeOrder() async {
+  Future<PlacedOrderResult> placeOrder() async {
     if (state.isEmpty) {
       throw CartException('Cart is empty.');
     }
@@ -168,8 +169,10 @@ class CartNotifier extends Notifier<CartState> {
       final dailyCount = await db.ordersDao.countOrdersInRange(from, to);
       final orderNumber = OrderNumberGenerator.generate(dailyCount);
 
+      var orderId = 0;
+
       await db.transaction(() async {
-        final orderId = await db.ordersDao.insertOrder(
+        orderId = await db.ordersDao.insertOrder(
           OrdersCompanion.insert(
             orderNumber: orderNumber,
             orderType: state.orderType.dbValue,
@@ -205,13 +208,18 @@ class CartNotifier extends Notifier<CartState> {
               unitPriceInPaisa: item.unitPriceInPaisa,
               totalPriceInPaisa: item.lineTotalInPaisa,
               isDeal: Value(item.isDeal),
+              lineDetails: item.isDeal &&
+                      item.dealItemNames != null &&
+                      item.dealItemNames!.isNotEmpty
+                  ? Value(item.dealItemNames!.join('\n'))
+                  : const Value.absent(),
             ),
           );
         }
       });
 
       clearCart();
-      return orderNumber;
+      return PlacedOrderResult(orderId: orderId, orderNumber: orderNumber);
     } finally {
       state = state.copyWith(isPlacingOrder: false);
     }
